@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import 
 from dotenv import load_dotenv,find_dotenv
 
 
@@ -34,7 +35,7 @@ SECRET_KEY = 'django-insecure-jp_-=swbn0$%#*b*knngv@-u%cx81^vw+j!ucf#%!0r_^-h#f#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -140,9 +141,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
-AUTH0_CLIENT_ID = os.environ.get("AUTH0_CLIENT_ID")
-AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_CLIENT_SECRET")
+from .config import AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET
+
 
 REDIRECT_URI = 'http://localhost:8000/auth/callback'
 REDIRECT_URI = 'http://localhost:8000/auth/'
