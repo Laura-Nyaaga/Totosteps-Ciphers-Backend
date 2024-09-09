@@ -1,20 +1,15 @@
-# Python
 *.pyc
 *.pyo
 *.pyd
 __pycache__/
 *.pyo
 *.pyd
-# Django
 db.sqlite3
 media/
 staticfiles/
-# Virtual environment
 venv/
 env/
-# Environment variables
 .env
-# IDEs and Editors
 .vscode/
 .idea/
 *.swp
