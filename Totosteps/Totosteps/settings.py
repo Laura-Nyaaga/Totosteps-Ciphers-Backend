@@ -16,6 +16,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'api',
+    'authentication',
+    'assesment_history_results',
+    'assesment_questions',
+    'users',
+    'child',
+    'dashboard',
+    'milestones',
+    'Totosteps',
+    'resources',
+    
 ]
 
 MIDDLEWARE = [
