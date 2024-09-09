@@ -1,0 +1,16 @@
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pyo
+*.pyd
+db.sqlite3
+media/
+staticfiles/
+venv/
+env/
+.env
+.vscode/
+.idea/
+*.swp
+*.swo
