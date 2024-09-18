@@ -1,13 +1,20 @@
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv,find_dotenv
+from datetime import timedelta
+load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+
 
 SECRET_KEY = 'django-insecure-xw(pvf+anx%9uziaecv^uwp41mkwj1g2p@l#5t@h!8hh@4_ky6'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost']
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -26,8 +33,18 @@ INSTALLED_APPS = [
     'milestones',
     'Totosteps',
     'resources',
-    
+    'rest_framework',
+    'rest_framework_simplejwt',
+
 ]
+
+
+AUTHENTICATION_BACKENDS = [
+'authlib.integrations.django_client.AuthBackend',
+'django.contrib.auth.backends.ModelBackend',
+'path.to.Auth0Backend',
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -44,7 +61,7 @@ ROOT_URLCONF = 'Totosteps.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -63,7 +80,7 @@ WSGI_APPLICATION = 'Totosteps.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME':'totosteps_database',
     }
 }
 
@@ -94,3 +111,26 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')
+
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
+
+AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_CLIENT_SECRET")
+
+REDIRECT_URI = 'http://127.0.0.1:8000/auth/callback/'
+REDIRECT_URI = 'http://127.0.0.1:8000/auth/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365*10),  
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=365*10),  
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
+

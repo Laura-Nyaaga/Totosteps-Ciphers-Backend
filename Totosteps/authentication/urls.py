@@ -1,10 +1,8 @@
+
+# urls.py
 from django.urls import path
-from . import views
+from .views import login, callback, logout, index
 
 urlpatterns = [
-    path("", views.index, name="index"),
-    path("login", views.login_view, name="login_view"),
-    path("sso-login", views.sso_login, name="sso_login"),
-    path("logout", views.logout_view, name="logout_view"),
-    path("callback", views.callback, name="callback"),
-]
+    path('api/users/login/', login, name='login'),        
+    path('api/users/callback/', callback, name='callback'),   ]

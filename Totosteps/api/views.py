@@ -1,53 +1,80 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+import logging
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from .models import User
+from rest_framework.views import APIView
+from users.models import User
 from .serializers import UserSerializer
-from .serializers import ChildSerializer
+from django.contrib.auth import authenticate
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class ParentDetailAPIView(APIView):
-    def get(self, request, parent_id):
-        parent = get_object_or_404(User, parent_id=parent_id)
-        serializer = ParentSerializer(parent)
-        return Response(serializer.data)
+logger = logging.getLogger(__name__)
 
-class SignInAPIView(APIView):
+class UserListView(APIView):
+    permission_classes = [IsAuthenticated]  
+
+    def get(self, request):
+        """
+        Retrieve a list of all users.
+        """
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        logger.info("Retrieved user list.")
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]  
+
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data   
-
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key},   
- status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
-
-class SignUpAPIView(APIView):
-    def post(self, request):
+        """
+        Handle user registration.
+        """
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data,   
- status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
+            logger.info('User registered successfully.')
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        logger.error('User registration failed: %s', serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class LoginView(APIView):
+    permission_classes = [AllowAny] 
 
-class ParentUpdateAPIView(APIView):
-    def put(self, request, parent_id):
-        parent = get_object_or_404(User, parent_id=parent_id)
-        serializer = UserSerializer(parent, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, 
- status=status.HTTP_400_BAD_REQUEST) 
+    def post(self, request):
+        """
+        Handle user login.
+        """
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = authenticate(request, email=email, password=password)
 
-class ParentChildrenAPIView(APIView):
-    def get(self, request, parent_id):
-        parent = get_object_or_404(User, parent_id=parent_id)
-        children = parent.children.all()
-        serializer = ChildSerializer(children, many=True)
-        return Response(serializer.data)
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            logger.info('User logged in successfully.')
+            return Response({
+                'success': 'Successfully logged in.',
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            }, status=status.HTTP_200_OK)
+        
+        logger.error('Invalid credentials provided for login.')
+        return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Handle user logout.
+        """
+        try:
+            refresh_token = request.data.get('refresh')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()  
+            logger.info('User logged out successfully.')
+            return Response({'success': 'Successfully logged out.'}, status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            logger.error('Logout error: %s', str(e))
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,12 +1,17 @@
-from django.contrib.auth import authenticate, login as django_login, logout as django_logout
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
-from django.shortcuts import render, redirect
-from django.urls import reverse
+import json
 from authlib.integrations.django_client import OAuth
 from django.conf import settings
-from django.contrib import messages
-from user.models import User
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from urllib.parse import quote_plus, urlencode
+from django.http import HttpResponse
+from users.models import User
+from django.http import JsonResponse, HttpResponseNotAllowed
+from authlib.integrations.django_client import OAuth
+from django.contrib.auth import authenticate
+
+
+
 oauth = OAuth()
 oauth.register(
     "auth0",
@@ -17,50 +22,96 @@ oauth.register(
     },
     server_metadata_url=f"https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
 )
-def login_view(request):
-    if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
-        user = authenticate(request, username=email, password=password)  # Django's built-in authentication
-        if user is not None:
-            django_login(request, user)
-            return redirect(reverse("index"))  # Redirect to index or dashboard
-        else:
-            messages.error(request, "Invalid email or password.")
-    return render(request, 'authentication/login.html')
-def sso_login(request):
-    return oauth.auth0.authorize_redirect(
-        request, request.build_absolute_uri(reverse("callback"))
-    )
+
+
+def login(request):
+    if request.method == "POST":
+        try:
+            credentials = json.loads(request.body)
+            email = credentials.get("email")
+            password = credentials.get("password")
+            
+            # Redirect to OAuth provider for authentication
+            auth_url = "https://localhost:8000/authorize"
+            redirect_uri = request.build_absolute_uri(reverse("callback"))
+            client_id = settings.OAUTH_CLIENT_ID
+            scope = "openid profile email"
+            auth_url_with_params = f"{auth_url}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&scope={scope}"
+            
+            return redirect(auth_url_with_params)
+        
+        except Exception as e:
+            print(f"Error during login: {str(e)}")
+            return JsonResponse({"error": f"Login failed: {str(e)}"}, status=401)
+    
+    elif request.method == "GET":
+        return render(request, "authentication/index.html")
+    
+    else:
+        return HttpResponseNotAllowed(["POST", "GET"])
+
+
+import requests
+
 def callback(request):
-    token = oauth.auth0.authorize_access_token(request)
-    userinfo = oauth.auth0.parse_id_token(request, token)
-    request.session["user"] = userinfo
-    email = userinfo.get("email")
-    # If the user exists in the local database, log them in
-    if check_existing_email(email):
-        user = User.objects.get(email=email)
-        django_login(request, user)  # Log the user in via Django's session system
-    return redirect(reverse("index"))
-def logout_view(request):
-    django_logout(request)  # Logout from Django session
-    request.session.clear()  # Clear Auth0 session if any
-    return redirect(reverse("login_view"))  # Redirect to login
+    code = request.GET.get('code')
+    if not code:
+        return JsonResponse({"error": "Authorization code not found."}, status=400)
+    
+    try:
+        token_url = "http://localhost:8000/token"
+        response = requests.post(token_url, data={
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': request.build_absolute_uri(reverse("callback")),
+            'client_id': settings.OAUTH_CLIENT_ID,
+            'client_secret': settings.OAUTH_CLIENT_SECRET
+        })
+        
+        tokens = response.json()
+        
+        if response.status_code == 200:
+            return JsonResponse({"message": "Successfully authenticated", "tokens": tokens}, status=200)
+        else:
+            return JsonResponse({"error": "Failed to authenticate"}, status=response.status_code)
+    
+    except Exception as e:
+        print(f"Error during callback: {str(e)}")
+        return JsonResponse({"error": f"Callback failed: {str(e)}"}, status=500)
+
+
+
+
+def logout(request):
+    request.session.clear()
+    return redirect(
+        f"https://{settings.AUTH0_DOMAIN}/v2/logout?"
+        + urlencode(
+            {
+                "returnTo": request.build_absolute_uri(reverse("index")),
+                "client_id": settings.AUTH0_CLIENT_ID,
+            },
+            quote_via=quote_plus,
+        ),
+    )
+    
 def check_existing_email(email):
     return User.objects.filter(email=email).exists()
-@login_required
+
 def index(request):
-    if request.user.is_authenticated:
-        return render(
-            request,
-            "authentication/index.html",
-            context={"session": request.session.get("user", {}), "pretty": json.dumps(request.session.get("user", {}), indent=4)},
-        )
-    else:
-        return HttpResponse("User is not registered.")
-
-
-
-
-
-
+    user = request.session.get("user")
+    if not user:
+        return redirect(reverse("login"))
+    email = user['userinfo']['email']
+    if not email:
+        return HttpResponse("email not passed in the")
+    if not check_existing_email(email):
+        return HttpResponse("user does not exist")
+    return render(
+        request,
+        "authentication/index.html",
+        context={
+            "session": user,
+            "pretty": json.dumps(request.session.get("user"), indent=4),
+        },
+    )
