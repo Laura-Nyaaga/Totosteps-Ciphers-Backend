@@ -16,6 +16,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'autism_image',
+    'autism_results',
+    'api',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
