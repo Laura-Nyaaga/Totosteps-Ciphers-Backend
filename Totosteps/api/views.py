@@ -7,9 +7,12 @@ from dateutil.relativedelta import relativedelta
 from child.models import Child
 from .serializers import  ChildSerializer
 from django.utils import timezone
+from django.shortcuts import render
+from autism_results.models import Autism_Results
+from autism_image.models import Autism_Image
 
-<<<<<<< HEAD
-
+from .serializers import AutismImageSerializer
+from .serializers import AutismResultsSerializer
 
 
 class ChildListView(APIView):
@@ -46,17 +49,8 @@ class ChildDetailView(APIView):
         child.is_active = False
         child.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-=======
-from django.shortcuts import render
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 
-from autism_results.models import Autism_Results
-from autism_image.models import Autism_Image
 
-from .serializers import AutismImageSerializer
-from .serializers import AutismResultsSerializer
 
 
 class AutismImageListView(APIView):
@@ -134,4 +128,3 @@ class AutismResultDetailListView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Autism_Results.DoesNotExist:
             return Response({"error": "Photo not found."}, status=status.HTTP_404_NOT_FOUND)
->>>>>>> 28d6f20 (add autism results and the image)

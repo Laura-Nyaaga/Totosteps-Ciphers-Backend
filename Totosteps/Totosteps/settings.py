@@ -16,12 +16,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
-    'child',
-=======
     'autism_image',
     'autism_results',
->>>>>>> 28d6f20 (add autism results and the image)
     'api',
     'rest_framework',
 ]
