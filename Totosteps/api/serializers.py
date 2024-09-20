@@ -1,4 +1,5 @@
 from rest_framework import serializers
+<<<<<<< HEAD
 from child.models import Child
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
@@ -18,3 +19,18 @@ class ChildSerializer(serializers.ModelSerializer):
     
 
     
+=======
+from autism_results.models import Autism_Results
+from autism_image.models import Autism_Image
+
+class AutismResultsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Autism_Results
+        fields = "__all__"
+        
+
+class AutismImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Autism_Image
+        fields = "__all__"        
+>>>>>>> 28d6f20 (add autism results and the image)
