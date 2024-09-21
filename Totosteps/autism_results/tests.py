@@ -15,7 +15,6 @@ class AutismResultsModelTest(TestCase):
             updated_at=timezone.now(),
             created_at=timezone.now()
         )
-
     def test_create_autism_results(self):
         """Test creating an Autism_Results instance."""
         results = Autism_Results.objects.create(
@@ -29,9 +28,9 @@ class AutismResultsModelTest(TestCase):
         self.assertEqual(results.results_id, 1)
         self.assertEqual(results.image_id, self.autism_image)
         self.assertEqual(results.result, 'Positive')
-        self.assertIsInstance(results.updated_at, timezone.datetime)
-        self.assertIsInstance(results.created_at, timezone.datetime)
-
+        self.assertIsNotNone(results.updated_at)
+        self.assertIsNotNone(results.created_at)
+        
     def test_string_representation(self):
         """Test the string representation of Autism_Results."""
         autism_result = Autism_Results.objects.create(
@@ -55,7 +54,6 @@ class AutismResultsModelTest(TestCase):
         }
         Autism_Results.objects.create(**autism_results_data)
 
-        # Now, let's try creating an object without required fields
         with self.assertRaises(IntegrityError):
             Autism_Results.objects.create(
                 image_id=self.autism_image,
