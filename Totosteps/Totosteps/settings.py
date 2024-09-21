@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'autism_image',
     'autism_results',
+    'child',
     'api',
     'rest_framework',
 ]
