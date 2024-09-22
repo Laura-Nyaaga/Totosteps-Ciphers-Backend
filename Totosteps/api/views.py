@@ -91,7 +91,7 @@ class ChildDetailView(APIView):
         child.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-# 3. MILESTONE MODEL
+# MILESTONE MODEL
 class MilestoneListView(APIView):
     def get(self, request):
         milestones = Milestone.objects.all()
@@ -144,7 +144,7 @@ class ChildMilestoneListView(APIView):
             })
         return Response(milestone_data, status=200)
 
- # 4. ASSESSMENT MODEL
+ # ASSESSMENT MODEL
 class AssessmentListView(APIView):
     def post(self, request):
         serializer = AssessmentSerializer(data=request.data)
@@ -215,6 +215,7 @@ class CategoryQuestionsListView(APIView):
         serializer = AssessmentSerializer(questions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)   
 
+# RESULT MODEL
 class ResultListView(APIView):
     def post(self, request):
         serializer = ResultSerializer(data=request.data)
@@ -253,7 +254,7 @@ class ResultDetailView(APIView):
         result.delete()
         return Response({"detail": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-# 2. RESOURCES MODEL
+# RESOURCES MODEL
 
 # CREATE AND LIST RESOURCES
 class ResourceListView(APIView):
@@ -270,7 +271,7 @@ class ResourceListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# GET, UPDATE AND DELETE SPECIFIC RESORCE BY ID
+# GET, UPDATE AND DELETE SPECIFIC RESOURCE BY ID
 class ResourceDetailAPIView(APIView):
     def get(self, request, resource_id):
         resources= get_object_or_404(Resource, resource_id=resource_id)
