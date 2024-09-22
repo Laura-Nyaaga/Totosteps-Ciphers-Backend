@@ -31,7 +31,7 @@ class Milestone(models.Model):
 
     milestone_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    child_id = models.ForeignKey(Child, on_delete=models.CASCADE)
+    child_id = models.ForeignKey(Child, on_delete=models.CASCADE, null=True, blank=True)
     age = models.PositiveIntegerField(choices=AGE_IN_MONTHS)   # Age in months when this milestone applies
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     summary = models.JSONField()

@@ -6,12 +6,13 @@ from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
 
+# AUTISM RESULT MODEL
 class AutismResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Autism_Results
         fields = "__all__"
-        
 
+# AUTISM IMAGE MODEL    
 class AutismImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Autism_Image
@@ -21,6 +22,7 @@ from child.models import Child
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 
+# CHILD MODEL
 class ChildSerializer(serializers.ModelSerializer):
     age = serializers.SerializerMethodField()
 
@@ -32,7 +34,7 @@ class ChildSerializer(serializers.ModelSerializer):
         today = timezone.now().date()
         birth_date = obj.date_of_birth
         age = relativedelta(today, birth_date)
-        return f"{age.years} years, {age.months} months"
+        return f"Is {age.years} years, {age.months} months old"
  
 
 # MILESTONE MODEL
@@ -47,6 +49,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
         model = Assessment
         fields = '__all__'
 
+# RESULT
 class ResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Result
