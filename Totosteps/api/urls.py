@@ -13,12 +13,15 @@ from .views import (
     MilestoneDetailView,
     MilestoneListView,
     MilestoneQuestionsListView,
+    RegisterView,
     ResourceDetailAPIView,
     ResourceListView,
     ResourceSearchView,
     ResultDetailView,
-    ResultListView
+    ResultListView,
+    UserProfile
 )
+
 
 urlpatterns = [
     # Autism-related paths
@@ -54,4 +57,9 @@ urlpatterns = [
     path('resources/<int:resource_id>/', ResourceDetailAPIView.as_view(), name='resource-detail'),
     path('resources/search/', ResourceSearchView.as_view(), name='resource-search'),
     
+    # REGISTER MODEL
+    path('register/', RegisterView.as_view(), name='register'),
+    path('users/', UserProfile.as_view(), name='all_users'),  # Get all users
+    path('user-profile/<int:user_id>/', UserProfile.as_view(), name='user_profile'),
+
 ]

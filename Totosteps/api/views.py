@@ -1,4 +1,12 @@
-from rest_framework.views import APIView
+
+from rest_framework.views import APIView 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User, Permission
+# from django.contrib.auth.models import Group
+# from rest_framework.permissions import IsAuthenticated
+# from rest_framework.authtoken.models import Token
+# from django.contrib.auth.models import update_last_login
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -8,10 +16,16 @@ from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
 from result.utils import send_results_email
-from .serializers import AssessmentSerializer, ChildSerializer, MilestoneSerializer, ResourceSerializer, ResultSerializer
+from .serializers import AssessmentSerializer, ChildSerializer,MilestoneSerializer, ResourceSerializer, ResultSerializer, UserSerializer,RegisterSerializer
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
 from .serializers import AutismImageSerializer, AutismResultsSerializer
+# from django.contrib.auth import get_user_model
+import logging
+
+
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class AutismImageListView(APIView):
     def get(self, request):
@@ -216,23 +230,25 @@ class CategoryQuestionsListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)   
 
 # RESULT MODEL
+
 class ResultListView(APIView):
     def post(self, request):
         serializer = ResultSerializer(data=request.data)
         if serializer.is_valid():
             result = serializer.save()
             answers = result.answers
-            parent_email = request.data.get('parent_email')  # Get the parent email from the request
+            user_id = request.data.get('user_id') 
 
-            if parent_email:
-                email_status = send_results_email(answers, parent_email)  # Send the email to the parent email
+            try:
+                user = User.objects.get(user_id=user_id) 
+                email_status = send_results_email(answers, user.email)  
 
                 if email_status == "Email sent successfully":
                     return Response({'detail': 'Result saved and email sent'}, status=status.HTTP_201_CREATED)
                 else:
                     return Response({'error': email_status}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:
-                return Response({'error': 'Parent email not provided'}, status=status.HTTP_400_BAD_REQUEST)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -300,3 +316,40 @@ class ResourceSearchView(APIView):
             serializer = ResourceSerializer(resources, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "activities parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+# USER MODEL
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+        
+            group_permissions = Permission.objects.filter(group__user=user).values_list('codename', flat=True)
+            user_permissions = user.user_permissions.values_list('codename', flat=True)
+            all_permissions = set(group_permissions) | set(user_permissions)
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserProfile(APIView):
+    def get_user_data(self, user):
+        group_permissions = Permission.objects.filter(group__user=user).values_list('codename', flat=True)
+        user_permissions = user.user_permissions.values_list('codename', flat=True)
+        all_permissions = set(group_permissions) | set(user_permissions)
+        
+        return {
+            'user_id': user.user_id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'role': user.role,
+            'permissions': list(all_permissions)  # Convert set to list
+        }
+
+    def get(self, request, user_id, *args, **kwargs):
+        user = get_object_or_404(User, user_id=user_id)
+        user.refresh_from_db()
+        user_data = self.get_user_data(user)
+        return Response(user_data)

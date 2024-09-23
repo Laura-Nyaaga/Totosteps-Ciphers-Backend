@@ -6,7 +6,6 @@ from assessment.models import Assessment
 
 
 
-
 def get_result_text(answers):
     negative_answers = [question for question, answer in answers.items() if answer == 'NO']
     if negative_answers:
