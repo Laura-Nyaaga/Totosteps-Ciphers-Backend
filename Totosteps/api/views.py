@@ -39,44 +39,6 @@ class UserListView(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
     
-    
-    
-#This is for getting resource usage metrics   
-    
-    
-class Resource_Metrics(APIView):
-
-    # API endpoint for retrieving resource usage metrics and associated resources.
-    # """
-
-    def get_queryset(self):
-        """
-        Defines the queryset used for resource aggregation.
-        """
-        return Resource.objects.all() #Return all resources
-
-    def get(self, request):
-        """
-        Handles GET requests to retrieve resource usage metrics.
-        """
-        resources = self.get_queryset()
-        serializer = ResourceSerializer(resources, many=True)
-
-        total_views = resources.aggregate(Sum('view_count'))['view_count__sum'] or 0
-        average_time_spent = resources.aggregate(Avg('total_time_spent'))['total_time_spent__avg'] or 0
-        average_completion_rate = resources.aggregate(Avg('completion_rate'))['completion_rate__avg'] or 0
-
-        metrics_data = {
-            "total_views": total_views,
-            "average_time_spent": average_time_spent,
-            "average_completion_rate": average_completion_rate,
-            "resources": serializer.data
-        }
-
-        return Response(metrics_data) 
-
-
-
 
 class AutismImageListView(APIView):
     def get(self, request):
@@ -334,6 +296,8 @@ class ResourceListView(APIView):
         resources = Resource.objects.all()
         serializer = ResourceSerializer(resources, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
 
 
 # GET, UPDATE AND DELETE SPECIFIC RESOURCE BY ID
