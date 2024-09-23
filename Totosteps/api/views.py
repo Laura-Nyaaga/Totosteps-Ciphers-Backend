@@ -7,11 +7,76 @@ from child.models import Child
 from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
+from django.db.models import Sum, Avg
 from result.utils import send_results_email
 from .serializers import AssessmentSerializer, ChildSerializer, MilestoneSerializer, ResourceSerializer, ResultSerializer
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
 from .serializers import AutismImageSerializer, AutismResultsSerializer
+
+
+
+
+
+class UserDetailView(APIView):
+    # This APIView is to show the detailed information about the User
+    
+    def get(self, request, id):
+ #This is for getting a specific user by using their unique id
+    
+        user = get_object_or_404(User, id=id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+# This is for getting a list of all users:
+class UserListView(APIView):
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve a list of users.
+        """
+        users = User.objects.all() 
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    
+    
+#This is for getting resource usage metrics   
+    
+    
+class Resource_Metrics(APIView):
+
+    # API endpoint for retrieving resource usage metrics and associated resources.
+    # """
+
+    def get_queryset(self):
+        """
+        Defines the queryset used for resource aggregation.
+        """
+        return Resource.objects.all() #Return all resources
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve resource usage metrics.
+        """
+        resources = self.get_queryset()
+        serializer = ResourceSerializer(resources, many=True)
+
+        total_views = resources.aggregate(Sum('view_count'))['view_count__sum'] or 0
+        average_time_spent = resources.aggregate(Avg('total_time_spent'))['total_time_spent__avg'] or 0
+        average_completion_rate = resources.aggregate(Avg('completion_rate'))['completion_rate__avg'] or 0
+
+        metrics_data = {
+            "total_views": total_views,
+            "average_time_spent": average_time_spent,
+            "average_completion_rate": average_completion_rate,
+            "resources": serializer.data
+        }
+
+        return Response(metrics_data) 
+
+
+
 
 class AutismImageListView(APIView):
     def get(self, request):
