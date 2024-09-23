@@ -7,11 +7,38 @@ from child.models import Child
 from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
+from django.db.models import Sum, Avg
 from result.utils import send_results_email
 from .serializers import AssessmentSerializer, ChildSerializer, MilestoneSerializer, ResourceSerializer, ResultSerializer
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
 from .serializers import AutismImageSerializer, AutismResultsSerializer
+
+
+
+
+
+class UserDetailView(APIView):
+    # This APIView is to show the detailed information about the User
+    
+    def get(self, request, id):
+ #This is for getting a specific user by using their unique id
+    
+        user = get_object_or_404(User, id=id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+# This is for getting a list of all users:
+class UserListView(APIView):
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve a list of users.
+        """
+        users = User.objects.all() 
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+    
 
 class AutismImageListView(APIView):
     def get(self, request):
@@ -254,9 +281,8 @@ class ResultDetailView(APIView):
         result.delete()
         return Response({"detail": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-# RESOURCES MODEL
 
-# CREATE AND LIST RESOURCES
+
 class ResourceListView(APIView):
     def post(self, request):
         serializer = ResourceSerializer(data=request.data)
@@ -266,9 +292,43 @@ class ResourceListView(APIView):
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        resources = Resource.objects.all()
+        resources = self.get_queryset()
         serializer = ResourceSerializer(resources, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Calculate metrics based on the filtered resources
+        total_views = resources.aggregate(Sum('view_count'))['view_count__sum'] or 0
+        average_time_spent = resources.aggregate(Avg('total_time_spent'))['total_time_spent__avg'] or 0
+        average_completion_rate = resources.aggregate(Avg('completion_rate'))['completion_rate__avg'] or 0
+
+        metrics_data = {
+            "total_views": total_views,
+            "average_time_spent": average_time_spent,
+            "average_completion_rate": average_completion_rate,
+            "resources": serializer.data
+        }
+
+        return Response(metrics_data, status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        """
+        Defines the queryset used for resource aggregation.
+        
+        """
+        resources = Resource.objects.all()  
+        filters = self.request.GET.get('filters', None)  
+
+        if filters:
+        
+            resource_id = filters.get('id', None)
+            if resource_id
+                resources = resources.filter(resource_id=resource_id)
+
+        return resources
+
+
+
+
+
 
 
 # GET, UPDATE AND DELETE SPECIFIC RESOURCE BY ID

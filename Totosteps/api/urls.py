@@ -17,7 +17,10 @@ from .views import (
     ResourceListView,
     ResourceSearchView,
     ResultDetailView,
-    ResultListView
+    ResultListView,
+    UserDetailView, 
+    UserListView,
+
 )
 
 urlpatterns = [
@@ -53,5 +56,10 @@ urlpatterns = [
     path('resources/', ResourceListView.as_view(), name='resource-list'),
     path('resources/<int:resource_id>/', ResourceDetailAPIView.as_view(), name='resource-detail'),
     path('resources/search/', ResourceSearchView.as_view(), name='resource-search'),
+    
+    #DASHBOARD-METRICS PATH
+    path('users/<int:id>/', UserDetailView.as_view()),  # User detail by ID
+    path('users/', UserListView.as_view()),         # List of all users 
+
     
 ]
