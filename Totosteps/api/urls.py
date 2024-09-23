@@ -20,7 +20,7 @@ from .views import (
     ResultListView,
     UserDetailView, 
     UserListView,
-    Resource_Metrics
+
 )
 
 urlpatterns = [
@@ -60,6 +60,6 @@ urlpatterns = [
     #DASHBOARD-METRICS PATH
     path('users/<int:id>/', UserDetailView.as_view()),  # User detail by ID
     path('users/', UserListView.as_view()),         # List of all users 
-    path('resource_metrics/', Resource_Metrics.as_view()),  # Resource usage metrics
+
     
 ]

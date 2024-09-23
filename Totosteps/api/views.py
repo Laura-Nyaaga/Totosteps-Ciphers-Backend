@@ -312,7 +312,7 @@ class ResourceListView(APIView):
     def get_queryset(self):
         """
         Defines the queryset used for resource aggregation.
-        You can modify this method to filter resources based on specific criteria like resource type, creation date, etc.
+        
         """
         resources = Resource.objects.all()  
         filters = self.request.GET.get('filters', None)  
