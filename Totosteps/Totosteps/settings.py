@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'milestones',
     'resources',
     'users',
-    # 'rest_framework_simplejwt.token_blacklist',
 
 ]
 
@@ -49,8 +48,7 @@ ROOT_URLCONF = 'Totosteps.urls'
 TEMPLATE_DIR = os.path.join(BASE_DIR,'My App', 'templates')
 
 
-# settings.py
-# settings.py
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -127,26 +125,15 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Totostep <totostepsciphers@gmail.com>')
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.SessionAuthentication',
-#     ],
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         'rest_framework.permissions.IsAuthenticated',
-#     ],
-# }
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
 AUTH_USER_MODEL = 'users.User'
 AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
     )
 
-# SIMPLE_JWT = {
-#     'AUTH_COOKIE': 'access_token',  # Cookie name for storing the access token
-#     'AUTH_COOKIE_SECURE': False,    # Set to True in production
-#     'AUTH_COOKIE_HTTP_ONLY': True,  # HTTP-only cookie to prevent JavaScript access
-#     'AUTH_COOKIE_PATH': '/',        # Cookie available site-wide
-#     'AUTH_COOKIE_SAMESITE': 'Lax',  # Adjust SameSite settings as needed
-# }
+
 
 ENV_FILE = find_dotenv()
 if ENV_FILE:

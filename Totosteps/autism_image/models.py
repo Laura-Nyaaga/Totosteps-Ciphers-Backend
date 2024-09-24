@@ -1,10 +1,12 @@
 from django.db import models
+from child.models import Child
 
 class Autism_Image(models.Model):
-    image_id = models.PositiveSmallIntegerField(primary_key=True)
-    child_id = models.IntegerField()
-    image_upload = models.ImageField(upload_to='images/')
+    image_id = models.AutoField(primary_key=True)
+    child = models.ForeignKey(Child, on_delete=models.CASCADE)  
+    image_upload = models.ImageField(upload_to='images/',)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return f"{self.image_upload} {self.child_id}"
+        return f"Image {self.image_id} for {self.child.username}"

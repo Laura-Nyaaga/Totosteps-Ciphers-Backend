@@ -30,6 +30,9 @@ class HasParentPermissions(BasePermission):
             'users.can_view_milestones',
             'users.can_view assessment',
             'users.can_view_results',
+            'users.can_add_autism_ image',
+            'users.can_view_children',
+            'users.can_edit_questions',
         ]
         return any(request.user.has_perm(perm) for perm in parent_permissions)
 class HasAdminPermissions(BasePermission):

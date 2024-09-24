@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from assessment.models import Assessment
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
@@ -11,7 +11,7 @@ from users.models import User
 from child.models import Child
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
-from django.contrib.auth.models import User, Permission
+
 
 
 # AUTISM RESULT MODEL
@@ -93,7 +93,7 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'role']
+        fields = ['email', 'password', 'role']
         extra_kwargs = {
             'password': {'write_only': True}
         }

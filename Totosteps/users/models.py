@@ -42,6 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='parent') 
+    is_staff = models.BooleanField(default=True)
     
     objects = UserManager()
     
@@ -66,3 +67,4 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_parent(self):
         return self.role == self.PARENT
+    

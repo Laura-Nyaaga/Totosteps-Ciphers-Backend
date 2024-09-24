@@ -2,10 +2,9 @@
 from rest_framework.views import APIView 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User, Permission
-# from django.contrib.auth.models import Group
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework.authtoken.models import Token
-# from django.contrib.auth.models import update_last_login
+from django.core.files.storage import default_storage
+import cv2
+import numpy as np
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
@@ -20,25 +19,81 @@ from .serializers import AssessmentSerializer, ChildSerializer,MilestoneSerializ
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
 from .serializers import AutismImageSerializer, AutismResultsSerializer
-# from django.contrib.auth import get_user_model
 import logging
+
+lower_ipd_threshold = 4.0  # cm
+upper_ipd_threshold = 5.0   # cm
+high_autism_ipd_threshold = upper_ipd_threshold + 1  # cm
+lower_forehead_threshold = 3.5  # cm
+upper_forehead_threshold = 4.5   # cm
+high_autism_forehead_threshold = upper_forehead_threshold + 1
+scale_factor = 30.0 
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
-class AutismImageListView(APIView):
+class AutismImageUploadView(APIView):
+    def post(self, request):
+        # Handle file upload
+        file = request.FILES['image']
+        file_name = default_storage.save(file.name, file)
+        file_path = default_storage.path(file_name)
+
+        # Load the uploaded image using OpenCV
+        image = cv2.imread(file_path)
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5)
+
+        if len(faces) == 0:
+            return Response({"error": "No face detected"}, status=status.HTTP_400_BAD_REQUEST)
+
+        for face_coordinates in faces:
+            # Calculate measurements
+            eye_distance_cm, forehead_length_cm, left_eye, right_eye = self.calculate_measurements(face_coordinates)
+
+            # Assess autism risk
+            risk_assessment = self.assess_risk(eye_distance_cm, forehead_length_cm)
+
+            # Save the image and result to the database
+            autism_image = Autism_Image.objects.create(image_upload=file_name)  
+            autism_result = Autism_Results.objects.create(
+                image=autism_image,
+                result=risk_assessment
+            )
+
+            result_serializer = AutismResultsSerializer(autism_result)
+
+            # Return the result
+            return Response(result_serializer.data, status=status.HTTP_201_CREATED)
+
+    def calculate_measurements(self, face_coordinates):
+        """Calculate inter-pupillary distance (IPD) and forehead length."""
+        x, y, w, h = face_coordinates
+        left_eye = (x + int(w * 0.25), y + int(h * 0.4))
+        right_eye = (x + int(w * 0.75), y + int(h * 0.4))
+        forehead_top = (x + int(w * 0.5), y)
+        forehead_bottom = (x + int(w * 0.5), y + int(h * 0.3))
+        pixel_distance_ipd = np.linalg.norm(np.array(left_eye) - np.array(right_eye))
+        eye_distance_cm = pixel_distance_ipd / scale_factor
+        pixel_distance_forehead = np.linalg.norm(np.array(forehead_top) - np.array(forehead_bottom))
+        forehead_length_cm = pixel_distance_forehead / scale_factor
+        return eye_distance_cm, forehead_length_cm, left_eye, right_eye
+
+    def assess_risk(self, eye_distance_cm, forehead_length_cm):
+        """Assess autism risk based on IPD and forehead length."""
+        if (eye_distance_cm > high_autism_ipd_threshold) and (forehead_length_cm > high_autism_forehead_threshold):
+            return "Highly Autistic"
+        elif (lower_ipd_threshold <= eye_distance_cm <= upper_ipd_threshold) and (lower_forehead_threshold <= forehead_length_cm <= upper_forehead_threshold):
+            return "Non Autistic"
+        else:
+            return "Low Autism Risk"
     def get(self, request):
         images = Autism_Image.objects.all()
         serializer = AutismImageSerializer(images, many=True)
         return Response(serializer.data)
      
-    def post(self, request):
-        serializer = AutismImageSerializer(data=request.data)
-        if serializer.is_valid():
-            photo = serializer.save()
-            return Response(AutismImageSerializer(photo).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AutismImageDetailListView(APIView):
     def get(self, request, image_id):
@@ -75,24 +130,26 @@ class AutismResultDetailListView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ChildListView(APIView):
+    permission_classes = [AllowAny]
+     
     def get(self, request):
-        children = Child.objects.filter(is_active=True)  # Filter for active children
+        children = Child.objects.filter(parent=request.user,is_active=True)  # Filter for active children
         serializer = ChildSerializer(children, many=True)
         return Response(serializer.data)
 
     def post(self, request):
         serializer = ChildSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(parent=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChildDetailView(APIView):
     def get_object(self, child_id):
-        return get_object_or_404(Child, id=child_id, is_active=True)
+        return get_object_or_404(Child, child_id=child_id,parent=user,is_active=True)
 
     def put(self, request, child_id):
-        child = self.get_object(child_id)
+        child = self.get_object(child_id, request.user)
         serializer = ChildSerializer(child, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -100,7 +157,7 @@ class ChildDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, child_id):
-        child = self.get_object(child_id)
+        child = self.get_object(child_id, request.user)
         child.is_active = False
         child.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -330,26 +387,42 @@ class RegisterView(APIView):
             user_permissions = user.user_permissions.values_list('codename', flat=True)
             all_permissions = set(group_permissions) | set(user_permissions)
 
+            
+            response_data = {
+                "user": serializer.data,
+                "permissions": list(all_permissions)
+            }
+
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserProfile(APIView):
+
+class UserDataMixin:
     def get_user_data(self, user):
         group_permissions = Permission.objects.filter(group__user=user).values_list('codename', flat=True)
         user_permissions = user.user_permissions.values_list('codename', flat=True)
-        all_permissions = set(group_permissions) | set(user_permissions)
-        
+        all_permissions = set(group_permissions)
+        all_permissions.update(user_permissions)
         return {
             'user_id': user.user_id,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'email': user.email,
             'role': user.role,
-            'permissions': list(all_permissions)  # Convert set to list
+            'permissions': list(all_permissions) 
         }
 
+class UserProfile(UserDataMixin, APIView):
     def get(self, request, user_id, *args, **kwargs):
         user = get_object_or_404(User, user_id=user_id)
         user.refresh_from_db()
         user_data = self.get_user_data(user)
         return Response(user_data)
+    
+class UserListView(UserDataMixin, APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        users = User.objects.all()
+        user_data_list = [self.get_user_data(user) for user in users]
+        return Response(user_data_list)

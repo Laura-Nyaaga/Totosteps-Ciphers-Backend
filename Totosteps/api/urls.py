@@ -2,10 +2,10 @@ from django.urls import path
 from .views import (
     AssessmentDetailView,
     AssessmentListView,
-    AutismImageDetailListView, 
+    AutismImageDetailListView,
+    AutismImageUploadView, 
     AutismResultDetailListView, 
     AutismResultListView, 
-    AutismImageListView,
     CategoryQuestionsListView,
     ChildListView,
     ChildDetailView,
@@ -19,16 +19,18 @@ from .views import (
     ResourceSearchView,
     ResultDetailView,
     ResultListView,
+    UserListView,
     UserProfile
 )
-
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Autism-related paths
     path('results/<int:image_id>/', AutismResultDetailListView.as_view(), name='autism-result-detail'), 
-    path('results/', AutismResultListView.as_view(), name='autism-result-list'),  
-    path('images/', AutismImageListView.as_view(), name='image-list'),  
-    path('images/<int:image_id>/', AutismImageDetailListView.as_view(), name='image-details'),  
+    path('results/', AutismResultListView.as_view(), name='autism-result-list'),
+    path('results/<int:image_id>/', AutismResultDetailListView.as_view(), name='autism-result-detail'),
+    path('upload/', AutismImageUploadView.as_view(), name='image-upload'), 
 
     # Child-related paths
     path('children/', ChildListView.as_view(), name='child-list'),
@@ -59,7 +61,7 @@ urlpatterns = [
     
     # REGISTER MODEL
     path('register/', RegisterView.as_view(), name='register'),
-    path('users/', UserProfile.as_view(), name='all_users'),  # Get all users
+    path('users/', UserListView.as_view(), name='all_users'),  
     path('user-profile/<int:user_id>/', UserProfile.as_view(), name='user_profile'),
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

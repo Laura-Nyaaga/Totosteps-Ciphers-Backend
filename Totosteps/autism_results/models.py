@@ -3,11 +3,11 @@ from django.db import models
 from autism_image.models import Autism_Image
 
 class Autism_Results(models.Model):
-    results_id = models.IntegerField()
-    image_id = models.ForeignKey(Autism_Image, on_delete=models.CASCADE, null=True)
+    results_id = models.AutoField(primary_key=True)
+    image = models.ForeignKey(Autism_Image, on_delete=models.CASCADE)  
     result = models.CharField(max_length=80)
-    updated_at = models.DateTimeField()
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.result}"
+        return f"Result {self.results_id} for Image {self.image.image_id}"
