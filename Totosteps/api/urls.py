@@ -2,10 +2,10 @@ from django.urls import path
 from .views import (
     AssessmentDetailView,
     AssessmentListView,
-    AutismImageDetailListView, 
+    AutismImageDetailListView,
+    AutismImageUploadView, 
     AutismResultDetailListView, 
     AutismResultListView, 
-    AutismImageListView,
     CategoryQuestionsListView,
     ChildListView,
     ChildDetailView,
@@ -13,19 +13,24 @@ from .views import (
     MilestoneDetailView,
     MilestoneListView,
     MilestoneQuestionsListView,
+    RegisterView,
     ResourceDetailAPIView,
     ResourceListView,
     ResourceSearchView,
     ResultDetailView,
-    ResultListView
+    ResultListView,
+    UserListView,
+    UserProfile
 )
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Autism-related paths
     path('results/<int:image_id>/', AutismResultDetailListView.as_view(), name='autism-result-detail'), 
-    path('results/', AutismResultListView.as_view(), name='autism-result-list'),  
-    path('images/', AutismImageListView.as_view(), name='image-list'),  
-    path('images/<int:image_id>/', AutismImageDetailListView.as_view(), name='image-details'),  
+    path('results/', AutismResultListView.as_view(), name='autism-result-list'),
+    path('results/<int:image_id>/', AutismResultDetailListView.as_view(), name='autism-result-detail'),
+    path('upload/', AutismImageUploadView.as_view(), name='image-upload'), 
 
     # Child-related paths
     path('children/', ChildListView.as_view(), name='child-list'),
@@ -54,4 +59,9 @@ urlpatterns = [
     path('resources/<int:resource_id>/', ResourceDetailAPIView.as_view(), name='resource-detail'),
     path('resources/search/', ResourceSearchView.as_view(), name='resource-search'),
     
-]
+    # REGISTER MODEL
+    path('register/', RegisterView.as_view(), name='register'),
+    path('users/', UserListView.as_view(), name='all_users'),  
+    path('user-profile/<int:user_id>/', UserProfile.as_view(), name='user_profile'),
+
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

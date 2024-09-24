@@ -1,10 +1,18 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from assessment.models import Assessment
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
 from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
+from users.models import User
+from child.models import Child
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+
+
 
 # AUTISM RESULT MODEL
 class AutismResultsSerializer(serializers.ModelSerializer):
@@ -18,9 +26,7 @@ class AutismImageSerializer(serializers.ModelSerializer):
         model = Autism_Image
         fields = "__all__"        
 
-from child.models import Child
-from django.utils import timezone
-from dateutil.relativedelta import relativedelta
+
 
 # CHILD MODEL
 class ChildSerializer(serializers.ModelSerializer):
@@ -74,3 +80,40 @@ class ResourceSerializer(serializers.ModelSerializer):
      class Meta:
         model = Resource
         fields = '__all__'
+
+# USERS
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+
+User = get_user_model()
+
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'role']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        user.save()
+        return user
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['user_id', 'first_name', 'last_name', 'email', 'role', 'permissions']
+
+    def get_permissions(self, obj):
+        permissions = obj.user_permissions.values_list('codename', flat=True)
+        return list(permissions)
