@@ -4,7 +4,7 @@ from child.models import Child
 class Autism_Image(models.Model):
     image_id = models.AutoField(primary_key=True)
     child = models.ForeignKey(Child, on_delete=models.CASCADE)  
-    image_upload = models.ImageField(upload_to='images/',)
+    image_upload = models.ImageField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
