@@ -1,4 +1,4 @@
-
+import dj_database_url
 import os
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-xw(pvf+anx%9uziaecv^uwp41mkwj1g2p@l#5t@h!8hh@4_ky6
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,11 +30,14 @@ INSTALLED_APPS = [
     'milestones',
     'resources',
     'users',
+    'corsheaders',
 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -42,6 +45,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'Totosteps.urls'
 
@@ -78,11 +83,18 @@ WSGI_APPLICATION = 'Totosteps.wsgi.application'
 
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL')
+    )
 }
+# Fallback for local development and test environments
+if not os.getenv('DATABASE_URL'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -108,8 +120,9 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -134,9 +147,7 @@ ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
 
-AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
-AUTH0_CLIENT_ID = os.environ.get("AUTH0_CLIENT_ID")
-AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_CLIENT_SECRET")
-
-
-REDIRECT_URI= "http://127.0.0.1:8000/auth/callback"
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN", "")
+AUTH0_CLIENT_ID = os.environ.get("AUTH0_CLIENT_ID", "")
+AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_CLIENT_SECRET", "")
+REDIRECT_URI= os.environ.get("REDIRECT_URI", "")
