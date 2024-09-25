@@ -2,7 +2,6 @@ from django.urls import path
 from .views import (
     AssessmentDetailView,
     AssessmentListView,
-    AutismImageDetailListView,
     AutismImageUploadView, 
     AutismResultDetailListView, 
     AutismResultListView, 
@@ -34,7 +33,7 @@ urlpatterns = [
 
     # Child-related paths
     path('children/', ChildListView.as_view(), name='child-list'),
-    path('children/<int:id>/', ChildDetailView.as_view(), name='child-detail'),
+    path('children/<int:child_id>/', ChildDetailView.as_view(), name='child-detail'),
 
      # MILESTONE PATH
     path('milestones/', MilestoneListView.as_view(), name='milestone-list'),

@@ -3,23 +3,32 @@ from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User, Permission
 from django.core.files.storage import default_storage
+from django.db import transaction
+import logging
+
 import cv2
 import numpy as np
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from assessment.models import Assessment
 from child.models import Child
+from autism_image.models import Autism_Image
+from autism_results.models import Autism_Results
+
 from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
 from result.utils import send_results_email
-from .serializers import AssessmentSerializer, ChildSerializer,MilestoneSerializer, ResourceSerializer, ResultSerializer, UserSerializer,RegisterSerializer
-from autism_results.models import Autism_Results
-from autism_image.models import Autism_Image
+from .serializers import (AssessmentSerializer,
+ChildSerializer,
+MilestoneSerializer, 
+ResourceSerializer, 
+ResultSerializer,
+RegisterSerializer)
 from .serializers import AutismImageSerializer, AutismResultsSerializer
-import logging
+
 
 lower_ipd_threshold = 4.0  # cm
 upper_ipd_threshold = 5.0   # cm
@@ -33,6 +42,8 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+# AUTISM IMAGE
 
 class AutismImageUploadView(APIView):
     def post(self, request):
@@ -94,7 +105,6 @@ class AutismImageUploadView(APIView):
         serializer = AutismImageSerializer(images, many=True)
         return Response(serializer.data)
      
-
 class AutismImageDetailListView(APIView):
     def get(self, request, image_id):
         image = get_object_or_404(Autism_Image, image_id=image_id)
@@ -105,6 +115,8 @@ class AutismImageDetailListView(APIView):
         image = get_object_or_404(Autism_Image, image_id=image_id)
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+# AUTISM RESULT
 
 class AutismResultListView(APIView):
     def get(self, request):
@@ -120,20 +132,22 @@ class AutismResultListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AutismResultDetailListView(APIView):
-    def get(self, request, result_id):  # Changed to result_id for clarity
+    def get(self, request, result_id): 
         autism_result = get_object_or_404(Autism_Results, id=result_id)
         return Response(AutismResultsSerializer(autism_result).data, status=status.HTTP_200_OK)
 
-    def delete(self, request, result_id):  # Changed to result_id for clarity
+    def delete(self, request, result_id):  
         autism_result = get_object_or_404(Autism_Results, id=result_id)
         autism_result.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+# CHILD MODEL
 class ChildListView(APIView):
-    permission_classes = [AllowAny]
-     
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        children = Child.objects.filter(parent=request.user,is_active=True)  # Filter for active children
+        children = Child.objects.filter(parent=request.user, is_active=True)
         serializer = ChildSerializer(children, many=True)
         return Response(serializer.data)
 
@@ -145,24 +159,23 @@ class ChildListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChildDetailView(APIView):
-    def get_object(self, child_id):
-        return get_object_or_404(Child, child_id=child_id,parent=user,is_active=True)
+    permission_classes = [IsAuthenticated]
 
-    def put(self, request, child_id):
-        child = self.get_object(child_id, request.user)
-        serializer = ChildSerializer(child, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_object(self, child_id):
+        return get_object_or_404(Child, child_id=child_id, parent=self.request.user, is_active=True)
+
+    def get(self, request, child_id):
+        child = self.get_object(child_id)
+        serializer = ChildSerializer(child)
+        return Response(serializer.data)
 
     def delete(self, request, child_id):
-        child = self.get_object(child_id, request.user)
+        child = self.get_object(child_id)
         child.is_active = False
         child.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-# MILESTONE MODEL
+# MILESTONE MODEL  
 class MilestoneListView(APIView):
     def get(self, request):
         milestones = Milestone.objects.all()
@@ -177,43 +190,45 @@ class MilestoneListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MilestoneDetailView(APIView):
+    def get_object(self, milestone_id):
+        return get_object_or_404(Milestone, milestone_id=milestone_id)
+
     def get(self, request, milestone_id):
-        milestone = get_object_or_404(Milestone, milestone_id=milestone_id)
+        milestone = self.get_object(milestone_id)
         serializer = MilestoneSerializer(milestone)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def patch(self, request, milestone_id):
-        question = get_object_or_404(Milestone, milestone_id=milestone_id)
-        serializer = MilestoneSerializer(question, data=request.data, partial=True)
-        
+        milestone = self.get_object(milestone_id)
+        serializer = MilestoneSerializer(milestone, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, milestone_id):
-        question = get_object_or_404(Milestone, milestone_id=milestone_id)
-        question.delete()
+        milestone = self.get_object(milestone_id)
+        milestone.delete()
         return Response({"detail": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-# CHILD CURRENT MILESTONE
 class ChildMilestoneListView(APIView):
     def get(self, request, child_id):
         child = get_object_or_404(Child, child_id=child_id)
         child_age_in_months = child.get_age_in_months()
         current_milestone = Milestone.get_current_milestone(child_age_in_months)
-        milestones = Milestone.objects.all().order_by('age')  
+        milestones = Milestone.objects.filter(child_id=child).order_by('age')
         milestone_data = []
         for milestone in milestones:
             is_current = (milestone == current_milestone)
             milestone_data.append({
-                "id": milestone.id,
-                "age": milestone.age_range,
-                "description": milestone.description,
+                "id": milestone.milestone_id,
+                "age": milestone.age,
+                "description": milestone.name,
                 "summary": milestone.summary,
-                "is_current": is_current  
+                "is_current": is_current
             })
-        return Response(milestone_data, status=200)
+        return Response(milestone_data, status=status.HTTP_200_OK)
+
 
  # ASSESSMENT MODEL
 class AssessmentListView(APIView):
@@ -289,30 +304,28 @@ class CategoryQuestionsListView(APIView):
 # RESULT MODEL
 
 class ResultListView(APIView):
-    def post(self, request):
-        serializer = ResultSerializer(data=request.data)
-        if serializer.is_valid():
-            result = serializer.save()
-            answers = result.answers
-            user_id = request.data.get('user_id') 
 
-            try:
-                user = User.objects.get(user_id=user_id) 
-                email_status = send_results_email(answers, user.email)  
-
-                if email_status == "Email sent successfully":
-                    return Response({'detail': 'Result saved and email sent'}, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({'error': email_status}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except User.DoesNotExist:
-                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def get(self, request):
-        results = Result.objects.all()
+    def get(self, request): 
+        results = Result.objects.all() 
         serializer = ResultSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = ResultSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            result = serializer.save()
+            answers = result.answers
+            user = result.user
+            try:
+                email_status = send_results_email(answers, user.email)
+                if email_status != "Email sent successfully":
+                    raise Exception(email_status)
+            except Exception as e:
+                transaction.set_rollback(True)
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'detail': 'Result saved and email sent'}, status=status.HTTP_201_CREATED)
     
 
 #GET AND DELETE A SPECIFIC RESULT

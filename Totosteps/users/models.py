@@ -50,7 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['role']  
     
     def __str__(self):
-        return self.email
+        return f"{self.email}"
 
     def clean(self):
         # Ensure only superusers have the admin role
