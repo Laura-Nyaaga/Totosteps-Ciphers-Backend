@@ -48,7 +48,7 @@ class Milestone(models.Model):
         Retrieving the current milestone based on the child's age.
         """
         try:
-            # Get the closest milestone without exceeding the child's current age
+            
             current_milestone = Milestone.objects.filter(age=child_age_in_months).order_by('-age').first()
             return current_milestone
         except Milestone.DoesNotExist:

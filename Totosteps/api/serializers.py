@@ -34,7 +34,8 @@ class ChildSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Child
-        fields = '__all__'  
+        fields = ['child_id', 'username', 'date_of_birth', 'is_active', 'parent', 'age']
+        read_only_fields = ['child_id', 'is_active', 'parent', 'age']
 
     def get_age(self, obj):
         today = timezone.now().date()
@@ -64,13 +65,12 @@ class ResultSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         milestone = validated_data.pop('milestone')
         answers = validated_data.pop('answers')
-        parent_email = validated_data.pop('parent_email')
-
-        # Create the Result object and save parent_email
+        user = validated_data.pop('user')
+        
         result = Result.objects.create(
             milestone=milestone,
             answers=answers,
-            parent_email=parent_email
+            user=user
         )
 
         return result

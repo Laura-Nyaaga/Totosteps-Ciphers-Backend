@@ -1,160 +1,133 @@
 from django.test import TestCase
-
-# Create your tests here.
-from django.test import TestCase
-from rest_framework.test import APIClient
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIClient
 from milestones.models import Milestone
 from child.models import Child
-from api.serializers import MilestoneSerializer
+from django.contrib.auth import get_user_model 
+from datetime import date
 
-# General setup for the test cases
+
 class MilestoneTestCase(TestCase):
     def setUp(self):
-        """
-        Setup common test data for each test.
-        """
-        self.child = Child.objects.create(
-            username='john_doe',  # Corrected field based on Child model
-            date_of_birth='2020-01-01',  # Date of birth as per the Child model
-            profile_picture=None,  # Optional field, can be left as None
-            is_active=True  # Active child
-        
+        self.client = APIClient()
+
+        # Get the custom user model
+        User = get_user_model()
+
+        # Create a test user and child
+        self.user = User.objects.create_user(
+            email='parent@example.com',  # Pass the email argument
+            password='password123',
+            role='parent'  # Pass the role argument
         )
-        
-        # Create a milestone for testing
-        self.milestone = Milestone.objects.create(
-            name="Test Milestone",
-            child_id=self.child,  # Ensure foreign key is correct
-            age=6,  # Milestone for a 6-month-old child
-            category=Milestone.SOCIAL,  # Choose one of the predefined categories
-            summary={"description": "Test summary"},
+        self.child = Child.objects.create(
+            username='child1',
+            date_of_birth=date(2022, 1, 1),
+            parent=self.user
+        )
+
+        # Create some test milestones
+        self.milestone1 = Milestone.objects.create(
+            name="Social Smile",
+            child_id=self.child,
+            age=2,
+            category=Milestone.SOCIAL,
+            summary={"description": "Smiles at people"},
+            is_current=True
+        )
+        self.milestone2 = Milestone.objects.create(
+            name="Babbles",
+            child_id=self.child,
+            age=4,
+            category=Milestone.LANGUAGE,
+            summary={"description": "Begins to babble"},
             is_current=True
         )
 
-        self.client = APIClient()
 
-    # ------------------- Model Test Cases ---------------------
-    def test_milestone_creation(self):
-        """
-        Test if milestone can be created successfully (happy path)
-        """
-        milestone = Milestone.objects.create(
-            name="Another Milestone",
-            child_id=self.child,
-            age=12,
-            category=Milestone.LANGUAGE,
-            summary={"description": "Another summary"}
-        )
-        self.assertEqual(str(milestone), "Milestone at 12 months")
-
-    def test_get_current_milestone(self):
-        """
-        Test getting the current milestone based on child's age (happy path)
-        """
-        current_milestone = Milestone.get_current_milestone(6)
-        self.assertEqual(current_milestone, self.milestone)
-
-    def test_get_current_milestone_no_match(self):
-        """
-        Test when there is no current milestone matching child's age (unhappy path)
-        """
-        current_milestone = Milestone.get_current_milestone(99)
-        self.assertIsNone(current_milestone)
-
-    # ------------------- Serializer Test Cases ---------------------
-    def test_valid_milestone_serializer(self):
-        """
-        Test valid milestone serializer (happy path)
-        """
-        serializer = MilestoneSerializer(instance=self.milestone)
-        self.assertEqual(serializer.data['name'], "Test Milestone")
-
-    def test_invalid_milestone_serializer(self):
-        """
-        Test invalid milestone serializer (unhappy path)
-        """
-        invalid_data = {
-            'name': '',
-            'age': 99,  # Invalid age
-            'category': 'Invalid',  # Invalid category
-            'summary': {}
-        }
-        serializer = MilestoneSerializer(data=invalid_data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn('name', serializer.errors)
-        self.assertIn('category', serializer.errors)
-
-    # ------------------- View Test Cases ---------------------
-    def test_get_milestone_list(self):
-        """
-        Test retrieving the list of milestones (happy path)
-        """
+    def test_get_all_milestones(self):
         url = reverse('milestone-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
 
-def test_create_milestone(self):
-    """
-    Test creating a milestone (happy path)
-    """
-    url = reverse('milestone-list')
-    data = {
-        "name": "New Milestone",
-        "child_id": self.child.child_id,  # Use child_id instead of id
-        "age": 9,
-        "category": Milestone.COGNITIVE,
-        "summary": {"description": "Cognitive test"},
-        "is_current": False
-    }
-    response = self.client.post(url, data, format='json')
-    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-
-def test_create_milestone_invalid(self):
-    """
-    Test creating a milestone with invalid data (unhappy path)
-    """
-    url = reverse('milestone-list')
-    data = {
-        "name": "",  # Invalid name
-        "child_id": self.child.child_id,  # Use child_id instead of id
-        "age": 99,  # Invalid age
-        "category": "Invalid",  # Invalid category
-        "summary": {}
-    }
-    response = self.client.post(url, data, format='json')
-    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    def test_get_milestone_detail(self):
-        """
-        Test retrieving a single milestone by ID (happy path)
-        """
-        url = reverse('milestone-detail', args=[self.milestone.milestone_id])
+    def test_get_single_milestone(self):
+        url = reverse('milestone-detail', args=[self.milestone1.milestone_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], self.milestone1.name)
 
-    def test_get_milestone_detail_not_found(self):
-        """
-        Test retrieving a milestone with an invalid ID (unhappy path)
-        """
-        url = reverse('milestone-detail', args=[9999])
+    def test_get_single_milestone_not_found(self):
+        url = reverse('milestone-detail', args=[999])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_create_milestone(self):
+        url = reverse('milestone-list')
+        data = {
+            "name": "Sits without support",
+            "child_id": self.child.child_id,
+            "age": 6,
+            "category": Milestone.MOVEMENT,
+            "summary": {"description": "Can sit without support"},
+            "is_current": True
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Sits without support")
+
+    def test_create_milestone_invalid_data(self):
+        url = reverse('milestone-list')
+        data = {
+            "name": "",  # Invalid: name is required
+            "child_id": self.child.child_id,
+            "age": 6,
+            "category": Milestone.MOVEMENT,
+            "summary": {"description": "Can sit without support"},
+            "is_current": True
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_update_milestone(self):
-        """
-        Test updating a milestone (happy path)
-        """
-        url = reverse('milestone-detail', args=[self.milestone.milestone_id])
-        data = {"name": "Updated Milestone"}
+        url = reverse('milestone-detail', args=[self.milestone1.milestone_id])
+        data = {
+            "name": "Smiles at everyone",
+            "is_current": False
+        }
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], "Smiles at everyone")
+        self.assertEqual(response.data['is_current'], False)
+
+    def test_update_milestone_invalid_data(self):
+        url = reverse('milestone-detail', args=[self.milestone1.milestone_id])
+        data = {
+            "age": "invalid"  # Invalid: age must be an integer
+        }
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_milestone(self):
-        """
-        Test deleting a milestone (happy path)
-        """
-        url = reverse('milestone-detail', args=[self.milestone.milestone_id])
+        url = reverse('milestone-detail', args=[self.milestone1.milestone_id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Milestone.objects.filter(milestone_id=self.milestone1.milestone_id).exists())
+
+    def test_delete_milestone_not_found(self):
+        url = reverse('milestone-detail', args=[999])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_child_milestones(self):
+        url = reverse('child_milestones', args=[self.child.child_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertFalse(any(m['is_current'] for m in response.data))
+
+    def test_get_child_milestones_child_not_found(self):
+        url = reverse('child_milestones', args=[999])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

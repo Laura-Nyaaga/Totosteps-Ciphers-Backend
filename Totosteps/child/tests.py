@@ -1,55 +1,63 @@
 from django.test import TestCase
-from django.core.exceptions import ValidationError
-from django.db import IntegrityError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import timezone
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
 from child.models import Child
-from datetime import date
-class ChildModelTest(TestCase):
+from users.models import User
+
+class ChildAPITest(TestCase):
     def setUp(self):
+        self.client = APIClient()
+        self.parent = User.objects.create_user(
+            email='parent@example.com',
+            password='testpass',
+            role='parent'
+        )
         self.child = Child.objects.create(
-            username="testchild",
-            date_of_birth=date(2015, 1, 1),
-            is_active=True
+            username='testchild',
+            date_of_birth='2020-01-01',
+            parent=self.parent
         )
-    def test_child_creation(self):
-        self.assertTrue(isinstance(self.child, Child))
-        self.assertEqual(self.child.__str__(), f"testchild (ID: {self.child.child_id})")
-    def test_username_unique(self):
-        with self.assertRaises(IntegrityError):
-            Child.objects.create(
-                username="testchild",
-                date_of_birth=date(2016, 1, 1)
-            )
-    def test_profile_picture_upload(self):
-        image = SimpleUploadedFile("test_image.jpg", b"file_content", content_type="image/jpeg")
-        child = Child.objects.create(
-            username="picturechild",
-            date_of_birth=date(2017, 1, 1),
-            profile_picture=image
-        )
-        self.assertTrue(child.profile_picture.name.startswith('child_profiles/'))
-    def test_is_active_default(self):
-        child = Child.objects.create(
-            username="activechild",
-            date_of_birth=date(2018, 1, 1)
-        )
-        self.assertTrue(child.is_active)
-    def test_created_and_updated_at(self):
-        self.assertIsNotNone(self.child.created_at)
-        self.assertIsNotNone(self.child.updated_at)
-        original_updated_at = self.child.updated_at
-        self.child.username = "updatedchild"
-        self.child.save()
+    def test_child_list_happy_case(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(reverse('child-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['username'], 'testchild')
+    def test_child_list_unauthenticated(self):
+        response = self.client.get(reverse('child-list'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_child_create_happy_case(self):
+        self.client.force_authenticate(user=self.parent)
+        data = {
+            'username': 'newchild',
+            'date_of_birth': '2021-01-01',
+        }
+        response = self.client.post(reverse('child-list'), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Child.objects.count(), 2)
+    def test_child_create_invalid_data(self):
+        self.client.force_authenticate(user=self.parent)
+        data = {
+            'username': '',
+            'date_of_birth': '2021-01-01',
+        }
+        response = self.client.post(reverse('child-list'), data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_child_detail_happy_case(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(reverse('child-detail', args=[self.child.child_id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], 'testchild')
+    def test_child_detail_unauthenticated(self):
+        response = self.client.get(reverse('child-detail', args=[self.child.child_id]))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_child_delete_happy_case(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.delete(reverse('child-detail', args=[self.child.child_id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.child.refresh_from_db()
-        self.assertGreater(self.child.updated_at, original_updated_at)
-    def test_date_of_birth_validation(self):
-        future_date = timezone.now().date() + timezone.timedelta(days=1)
-        try:
-            child = Child.objects.create(
-                username="futurechild",
-                date_of_birth=future_date
-            )
-            self.assertTrue(True)
-        except ValidationError:
-            self.fail("Unexpected ValidationError raised")
+        self.assertFalse(self.child.is_active)
+    def test_child_delete_unauthenticated(self):
+        response = self.client.delete(reverse('child-detail', args=[self.child.child_id]))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
