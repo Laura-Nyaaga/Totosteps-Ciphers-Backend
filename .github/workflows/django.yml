@@ -18,10 +18,10 @@ jobs:
       - name: Set up Git remote for Heroku
         run: |
           git remote -v
-          git remote add heroku https://git.heroku.com/Totosteps.git || echo "Heroku remote already exists"
+          git remote add heroku https://git.heroku.com/totosteps.git || echo "Heroku remote already exists"
       - name: Set Heroku buildpack
         run: |
-          heroku buildpacks:set heroku/python -a Totosteps
+          heroku buildpacks:set heroku/python -a totosteps
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       - name: Deploy to Heroku
