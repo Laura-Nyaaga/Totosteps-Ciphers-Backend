@@ -81,6 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Totosteps.wsgi.application'
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 DATABASES = {
     'default': dj_database_url.config(
