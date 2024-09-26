@@ -1,7 +1,7 @@
 
 from rest_framework.views import APIView 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User, Permission, AnonymousUser
 from django.core.files.storage import default_storage
 from django.db import transaction
 import logging
@@ -144,9 +144,7 @@ class AutismResultDetailListView(APIView):
 
 # CHILD MODEL
 class ChildListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
+    def get(self, request):     
         children = Child.objects.filter(parent=request.user, is_active=True)
         serializer = ChildSerializer(children, many=True)
         return Response(serializer.data)
@@ -158,9 +156,8 @@ class ChildListView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class ChildDetailView(APIView):
-    permission_classes = [IsAuthenticated]
 
+class ChildDetailView(APIView):
     def get_object(self, child_id):
         return get_object_or_404(Child, child_id=child_id, parent=self.request.user, is_active=True)
 
