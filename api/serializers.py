@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from rest_framework.serializers import SerializerMethodField
 from assessment.models import Assessment
 from autism_results.models import Autism_Results
 from autism_image.models import Autism_Image
@@ -35,7 +36,7 @@ class ChildSerializer(serializers.ModelSerializer):
     class Meta:
         model = Child
         fields = ['child_id', 'username', 'date_of_birth', 'is_active', 'parent', 'age']
-        read_only_fields = ['child_id', 'is_active', 'parent', 'age']
+        read_only_fields = ['child_id', 'is_active', 'age']
 
     def get_age(self, obj):
         today = timezone.now().date()
@@ -105,6 +106,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             user.set_password(password)
         user.save()
         return user
+    
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -117,3 +119,21 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_permissions(self, obj):
         permissions = obj.user_permissions.values_list('codename', flat=True)
         return list(permissions)
+    
+class ChildListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Child
+        fields ='__all__'
+       
+class ParentListSerializer(serializers.ModelSerializer):
+    children = ChildListSerializer(many=True, read_only=True) 
+
+    class Meta:
+        model = User
+        fields = '__all__'
+    
+
+
+
+
+

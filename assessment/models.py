@@ -24,7 +24,7 @@ class Assessment(models.Model):
     
     question_id = models.AutoField(primary_key=True)
     milestone = models.ForeignKey(Milestone, on_delete=models.CASCADE)
-    question = models.JSONField(unique=True)
+    question = models.CharField(max_length=255, unique=True)
     correct_answer = models.CharField(max_length=3, choices=[('YES', 'YES'), ('NO', 'NO')])
     question_type = models.CharField(max_length=25, choices=QUESTION_TYPES)
     category = models.CharField(choices=CATEGORY_CHOICES, null=False, max_length=12)
