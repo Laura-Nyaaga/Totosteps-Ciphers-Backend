@@ -45,7 +45,7 @@ def send_results_email(answers, recipient_email):
             subject="Milestone Assessment Result",
             message='',
             html_message=html_content,
-            from_email='Totostep <totostepsciphers@gmail.com>',            
+            from_email='totostepsciphers@gmail.com',            
             recipient_list=[recipient_email],
             fail_silently=False,
         )

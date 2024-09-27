@@ -21,9 +21,9 @@ from milestones.models import Milestone
 from resources.models import Resource
 from result.models import Result
 from result.utils import send_results_email
-from .serializers import (AssessmentSerializer,
+from .serializers import (AssessmentSerializer, ChildListSerializer,
 ChildSerializer,
-MilestoneSerializer, 
+MilestoneSerializer, ParentListSerializer, 
 ResourceSerializer, 
 ResultSerializer,
 RegisterSerializer)
@@ -47,11 +47,25 @@ logger = logging.getLogger(__name__)
 
 class AutismImageUploadView(APIView):
     def post(self, request):
-        # Handle file upload
-        file = request.FILES['image']
-        file_name = default_storage.save(file.name, file)
-        file_path = default_storage.path(file_name)
-
+        file = request.FILES.get('image')
+        # file_path = autism_image.image_upload.path 
+        child_id = request.data.get('child')
+        if not child_id:
+            return Response ({"error": "Child ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            child = Child.objects.get(child_id=child_id)
+        except Child.DoesNotExist:
+            return Response({"error":"Child not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        if not file:
+            return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        autism_image = Autism_Image.objects.create(
+            child=child,
+            image_upload=file
+        )
+        file_path = autism_image.image_upload.path 
+        
         # Load the uploaded image using OpenCV
         image = cv2.imread(file_path)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -61,14 +75,14 @@ class AutismImageUploadView(APIView):
             return Response({"error": "No face detected"}, status=status.HTTP_400_BAD_REQUEST)
 
         for face_coordinates in faces:
-            # Calculate measurements
+        
             eye_distance_cm, forehead_length_cm, left_eye, right_eye = self.calculate_measurements(face_coordinates)
 
-            # Assess autism risk
+            
             risk_assessment = self.assess_risk(eye_distance_cm, forehead_length_cm)
 
-            # Save the image and result to the database
-            autism_image = Autism_Image.objects.create(image_upload=file_name)  
+            
+            autism_image = Autism_Image.objects.create(image_upload=file)  
             autism_result = Autism_Results.objects.create(
                 image=autism_image,
                 result=risk_assessment
@@ -76,7 +90,7 @@ class AutismImageUploadView(APIView):
 
             result_serializer = AutismResultsSerializer(autism_result)
 
-            # Return the result
+        
             return Response(result_serializer.data, status=status.HTTP_201_CREATED)
 
     def calculate_measurements(self, face_coordinates):
@@ -100,6 +114,7 @@ class AutismImageUploadView(APIView):
             return "Non Autistic"
         else:
             return "Low Autism Risk"
+        
     def get(self, request):
         images = Autism_Image.objects.all()
         serializer = AutismImageSerializer(images, many=True)
@@ -144,15 +159,16 @@ class AutismResultDetailListView(APIView):
 
 # CHILD MODEL
 class ChildListView(APIView):
-    def get(self, request):     
-        children = Child.objects.filter(parent=request.user, is_active=True)
-        serializer = ChildSerializer(children, many=True)
+    def get(self, request):    
+        
+        children = Child.objects.all()
+        serializer = ChildListSerializer(children, many=True)
         return Response(serializer.data)
 
     def post(self, request):
         serializer = ChildSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(parent=request.user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -436,3 +452,17 @@ class UserListView(UserDataMixin, APIView):
         users = User.objects.all()
         user_data_list = [self.get_user_data(user) for user in users]
         return Response(user_data_list)
+    
+class ParentListView(APIView):
+    def get(self, request):    
+        
+        children = User.objects.filter(role=User.PARENT)
+        serializer = ParentListSerializer(children, many=True)
+        return Response(serializer.data)
+
+class ParentDetailview(APIView):
+
+    def get(self, request, user_id):
+        parent = get_object_or_404(User.objects.filter(role=User.PARENT), user_id=user_id)
+        serializer = ParentListSerializer(parent)
+        return Response(serializer.data)
