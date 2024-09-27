@@ -78,3 +78,4 @@ class AutismResultTests(TestCase):
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('image', response.data)  
+

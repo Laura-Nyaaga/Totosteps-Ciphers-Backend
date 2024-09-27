@@ -26,6 +26,7 @@ class AutismImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Autism_Image
         fields = "__all__"        
+        
 
 
 

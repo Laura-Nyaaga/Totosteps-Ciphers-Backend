@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 class Child(models.Model):
     child_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=20, unique=True)
-    date_of_birth = models.DateField()  # Use DateField instead of DateTimeField
+    date_of_birth = models.DateField() 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

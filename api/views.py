@@ -82,7 +82,7 @@ class AutismImageUploadView(APIView):
             risk_assessment = self.assess_risk(eye_distance_cm, forehead_length_cm)
 
             
-            autism_image = Autism_Image.objects.create(image_upload=file)  
+            autism_image = Autism_Image.objects.create(image_upload=file, child=child)  
             autism_result = Autism_Results.objects.create(
                 image=autism_image,
                 result=risk_assessment
@@ -466,3 +466,16 @@ class ParentDetailview(APIView):
         parent = get_object_or_404(User.objects.filter(role=User.PARENT), user_id=user_id)
         serializer = ParentListSerializer(parent)
         return Response(serializer.data)
+    
+class RestrictUserView(APIView):
+    def post(self, request, user_id, *args, **kwargs):
+        user = get_object_or_404(User, user_id=user_id)
+        user.is_active = False
+        user.save()
+        return Response({'message': 'User restricted successfully.'}, status=status.HTTP_200_OK)
+class RestoreUserView(APIView):
+    def post(self, request, user_id, *args, **kwargs):
+        user = get_object_or_404(User, user_id=user_id)
+        user.is_active = True
+        user.save()
+        return Response({'message': 'User restored successfully.'}, status=status.HTTP_200_OK)
