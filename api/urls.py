@@ -18,6 +18,8 @@ from .views import (
     ResourceDetailAPIView,
     ResourceListView,
     ResourceSearchView,
+    RestoreUserView,
+    RestrictUserView,
     ResultDetailView,
     ResultListView,
     UserListView,
@@ -64,6 +66,8 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('users/', UserListView.as_view(), name='all_users'),  
     path('user-profile/<int:user_id>/', UserProfile.as_view(), name='user_profile'),
+    path('users/<int:user_id>/restrict/', RestrictUserView.as_view(), name='user-restrict'),
+    path('users/<int:user_id>/restore/', RestoreUserView.as_view(), name='user-restore'),
 
     # Parent View
     path('parent/', ParentListView.as_view(), name='parent-view'),

@@ -38,11 +38,11 @@ class AutismImageTests(TestCase):
         self.assertEqual(autism_image.child, self.child)
         self.assertTrue(autism_image.image_upload)
 
-    # Fix this method
+    
     def test_upload_image_without_image(self):
         """Test that uploading without an image raises a ValidationError."""
         autism_image = Autism_Image(
-            child=self.child  # The self reference is correct here
+            child=self.child  
         )
         with self.assertRaises(ValidationError):
             autism_image.full_clean()
