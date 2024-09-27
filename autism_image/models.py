@@ -12,8 +12,10 @@ class Autism_Image(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
-    
-        if isinstance(self.image_upload.file, UploadedFile): 
+        if not self.image_upload: 
+            raise ValidationError(_("Image file is required."))
+
+        if hasattr(self.image_upload, 'file') and isinstance(self.image_upload.file, UploadedFile): 
             file_type = self.image_upload.file.content_type
             if file_type not in ['image/jpeg', 'image/png']:
                 raise ValidationError(_('Unsupported file type. Only JPEG and PNG images are allowed.'))
