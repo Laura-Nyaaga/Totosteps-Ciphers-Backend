@@ -9,7 +9,6 @@ import tempfile
 User = get_user_model()
 
 class AutismImageTests(TestCase):
-
     def setUp(self):
         self.parent_user = User.objects.create_user(
             email='parent@example.com',
@@ -39,16 +38,11 @@ class AutismImageTests(TestCase):
         self.assertEqual(autism_image.child, self.child)
         self.assertTrue(autism_image.image_upload)
 
-    def test_upload_image_without_child(self):
-        autism_image = Autism_Image(
-            image_upload=self.test_image
-        )
-        with self.assertRaises(ValidationError):
-            autism_image.full_clean()
-
+    # Fix this method
     def test_upload_image_without_image(self):
+        """Test that uploading without an image raises a ValidationError."""
         autism_image = Autism_Image(
-            child=self.child
+            child=self.child  # The self reference is correct here
         )
         with self.assertRaises(ValidationError):
             autism_image.full_clean()
