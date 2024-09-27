@@ -12,6 +12,8 @@ from .views import (
     MilestoneDetailView,
     MilestoneListView,
     MilestoneQuestionsListView,
+    ParentDetailview,
+    ParentListView,
     RegisterView,
     ResourceDetailAPIView,
     ResourceListView,
@@ -62,5 +64,9 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('users/', UserListView.as_view(), name='all_users'),  
     path('user-profile/<int:user_id>/', UserProfile.as_view(), name='user_profile'),
+
+    # Parent View
+    path('parent/', ParentListView.as_view(), name='parent-view'),
+    path('parent/<int:user_id>/', ParentDetailview.as_view(), name='parent-detailview'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
