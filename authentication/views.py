@@ -11,6 +11,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from result.utils import send_results_email
 
 # Set up OAuth
 oauth = OAuth()
@@ -36,11 +37,23 @@ def user_login(request):
         if user is not None and user.is_active:
             django_login(request, user)
             logger.info(f"User {email} logged in successfully.")
-            return JsonResponse({'status': 'success', 'message': 'Logged in successfully!'}, status=200)
+            user_data = {
+                'user_id': user.user_id,  
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+            }
+            return JsonResponse({'status': 'success', 'message': 'Logged in successfully!', 'user': user_data}, status=200)
         else:
             logger.warning(f"Failed login attempt for email: {email}")
             return JsonResponse({'status': 'error', 'message': 'Invalid credentials'}, status=401)
+    
     return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=400)
+
+
+
+
+
 
 @csrf_exempt
 def loginSSO(request):
@@ -90,3 +103,5 @@ def index(request):
         "user_authenticated": request.user.is_authenticated,
         "session": request.session.get("user"),
     })
+
+
