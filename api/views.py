@@ -5,10 +5,13 @@ from django.contrib.auth.models import User, Permission, AnonymousUser
 from django.core.files.storage import default_storage
 from django.db import transaction
 import logging
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+
 
 import cv2
 import numpy as np
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -158,6 +161,7 @@ class AutismResultDetailListView(APIView):
 
 
 # CHILD MODEL
+
 class ChildListView(APIView):
     def get(self, request):    
         
@@ -165,13 +169,19 @@ class ChildListView(APIView):
         serializer = ChildListSerializer(children, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
-        serializer = ChildSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def post(self, request): 
+        serializer = ChildSerializer(data=request.data) 
+        if serializer.is_valid(): 
+            child = serializer.save(parent=request.user)  
+            child_data = { 
+            'child_id': child.child_id, 
+            'username': child.username, 
+            'date_of_birth': child.date_of_birth, 
+            'is_active': child.is_active, 
+            'parent': child.parent.user_id
+            } 
+            return Response(child_data, status=status.HTTP_201_CREATED) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ChildDetailView(APIView):
     def get_object(self, child_id):
@@ -468,14 +478,30 @@ class ParentDetailview(APIView):
         return Response(serializer.data)
     
 class RestrictUserView(APIView):
-    def post(self, request, user_id, *args, **kwargs):
+    def patch(self, request, user_id, *args, **kwargs):
         user = get_object_or_404(User, user_id=user_id)
         user.is_active = False
         user.save()
         return Response({'message': 'User restricted successfully.'}, status=status.HTTP_200_OK)
 class RestoreUserView(APIView):
-    def post(self, request, user_id, *args, **kwargs):
+    def patch(self, request, user_id, *args, **kwargs):
         user = get_object_or_404(User, user_id=user_id)
         user.is_active = True
         user.save()
         return Response({'message': 'User restored successfully.'}, status=status.HTTP_200_OK)
+    
+
+class SubmitAssessmentView(APIView):
+    def post(self, request):
+        serializer = ResultSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            result = serializer.save()
+            user_email = result.user.email
+            answers = result.answers
+            email_status = send_results_email(answers, user_email)
+            if email_status == "Email sent successfully":
+                return Response({'message': 'Assessment submitted and email sent!'}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'message': f'Assessment submitted, but email failed to send: {email_status}'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
