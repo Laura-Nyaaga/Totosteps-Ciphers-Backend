@@ -22,6 +22,7 @@ from .views import (
     RestrictUserView,
     ResultDetailView,
     ResultListView,
+    SubmitAssessmentView,
     UserListView,
     UserProfile
 )
@@ -34,6 +35,7 @@ urlpatterns = [
     path('results/', AutismResultListView.as_view(), name='autism-result-list'),
     path('results/<int:image_id>/', AutismResultDetailListView.as_view(), name='autism-result-detail'),
     path('upload/', AutismImageUploadView.as_view(), name='image-upload'), 
+    
 
     # Child-related paths
     path('children/', ChildListView.as_view(), name='child-list'),
@@ -72,5 +74,8 @@ urlpatterns = [
     # Parent View
     path('parent/', ParentListView.as_view(), name='parent-view'),
     path('parent/<int:user_id>/', ParentDetailview.as_view(), name='parent-detailview'),
+
+    # Submit answers
+    path('submit-assessment/', SubmitAssessmentView.as_view(), name='submit_assessment'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

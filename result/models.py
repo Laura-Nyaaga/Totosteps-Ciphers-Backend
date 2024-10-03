@@ -1,5 +1,5 @@
 from django.db import models
-from milestones.models import Milestone
+from assessment.models import Milestone
 from users.models import User 
 
 class Result(models.Model):
@@ -8,4 +8,5 @@ class Result(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)  
     answers = models.JSONField(null=True, blank=True)
 
-    
+    def __str__(self):
+        return f"Result for {self.user.email} on {self.assessment}"
