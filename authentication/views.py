@@ -52,9 +52,6 @@ def user_login(request):
 
 
 
-
-
-
 @csrf_exempt
 def loginSSO(request):
     """Redirect to the Auth0 login page for SSO."""
