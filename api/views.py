@@ -169,34 +169,49 @@ class ChildListView(APIView):
         serializer = ChildListSerializer(children, many=True)
         return Response(serializer.data)
 
-    def post(self, request): 
-        serializer = ChildSerializer(data=request.data) 
-        if serializer.is_valid(): 
-            child = serializer.save(parent=request.user)  
-            child_data = { 
-            'child_id': child.child_id, 
-            'username': child.username, 
-            'date_of_birth': child.date_of_birth, 
-            'is_active': child.is_active, 
-            'parent': child.parent.user_id
-            } 
-            return Response(child_data, status=status.HTTP_201_CREATED) 
+    def post(self, request):
+        serializer = ChildSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            try:
+                child = serializer.save()
+                child_data = {
+                    'child_id': child.child_id,
+                    'username': child.username,
+                    'date_of_birth': child.date_of_birth,
+                    'is_active': child.is_active,
+                    'parent': child.parent.user_id if child.parent else None
+                }
+                return Response({'child': child_data}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class ChildDetailView(APIView):
     def get_object(self, child_id):
         return get_object_or_404(Child, child_id=child_id, parent=self.request.user, is_active=True)
 
     def get(self, request, child_id):
-        child = self.get_object(child_id)
-        serializer = ChildSerializer(child)
-        return Response(serializer.data)
+        try:
+            child = Child.objects.get(child_id=child_id)
+            serializer = ChildSerializer(child)
+            return Response(serializer.data)
+        except Child.DoesNotExist:
+            return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, child_id):
-        child = self.get_object(child_id)
-        child.is_active = False
-        child.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            child = Child.objects.get(child_id=child_id)
+            child.is_active = False
+            child.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Child.DoesNotExist:
+            return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
 # MILESTONE MODEL  
 class MilestoneListView(APIView):
