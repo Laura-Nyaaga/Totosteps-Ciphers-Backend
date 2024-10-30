@@ -12,8 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from result.utils import send_results_email
+from users.models import User
 
-# Set up OAuth
 oauth = OAuth()
 oauth.register(
     "auth0",
@@ -23,7 +23,6 @@ oauth.register(
     server_metadata_url=f"http://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
 )
 
-# Set up logger
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
@@ -33,23 +32,44 @@ def user_login(request):
         email = data.get('email')
         password = data.get('password')
         logger.info(f"Login attempt for email: {email}")
-        user = authenticate(email=email, password=password)
-        if user is not None and user.is_active:
-            django_login(request, user)
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            logger.warning(f"Login attempt for non-existent email: {email}")
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Invalid credentials'
+            }, status=401)
+ 
+        authenticated_user = authenticate(email=email, password=password)
+        
+        if authenticated_user is not None and authenticated_user.is_active:
+            django_login(request, authenticated_user)
             logger.info(f"User {email} logged in successfully.")
             user_data = {
-                'user_id': user.user_id,  
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
+                'user_id': authenticated_user.user_id,  
+                'first_name': authenticated_user.first_name,
+                'last_name': authenticated_user.last_name,
+                'email': authenticated_user.email,
             }
-            return JsonResponse({'status': 'success', 'message': 'Logged in successfully!', 'user': user_data}, status=200)
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Logged in successfully!', 
+                'user': user_data
+            }, status=200)
         else:
             logger.warning(f"Failed login attempt for email: {email}")
-            return JsonResponse({'status': 'error', 'message': 'Invalid credentials'}, status=401)
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Invalid credentials',
+                'reset_available': True  # Indicate that password reset is available
+            }, status=401)
     
-    return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=400)
-
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Only POST requests are allowed'
+    }, status=400)
 
 
 @csrf_exempt
@@ -67,7 +87,6 @@ def callback(request):
         request.session["user"] = token
         logger.info("OAuth callback successful.")
         
-        # Return user information as JSON
         return JsonResponse({
             'status': 'success',
             'token': token,

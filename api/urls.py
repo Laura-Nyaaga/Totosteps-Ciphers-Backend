@@ -8,12 +8,12 @@ from .views import (
     CategoryQuestionsListView,
     ChildListView,
     ChildDetailView,
-    ChildMilestoneListView,
     MilestoneDetailView,
     MilestoneListView,
     MilestoneQuestionsListView,
     ParentDetailview,
     ParentListView,
+    PasswordResetView,
     RegisterView,
     ResourceDetailAPIView,
     ResourceListView,
@@ -46,9 +46,6 @@ urlpatterns = [
     path('milestones/<int:milestone_id>/', MilestoneDetailView.as_view(), name='milestone-detail'),
     path('milestones/<int:milestone_id>/questions/', MilestoneQuestionsListView.as_view(), name='milestone-questions'),
 
-     # CHILDMILESTONE
-    path('child/<int:child_id>/milestones/', ChildMilestoneListView.as_view(), name='child_milestones'),
-
      # ASSESSMENT PATH
     path('assessment/', AssessmentListView.as_view(), name='assessment_create'),
     path('assessment/<int:question_id>/', AssessmentDetailView.as_view(), name='get_question_by_id'),
@@ -77,5 +74,7 @@ urlpatterns = [
 
     # Submit answers
     path('submit-assessment/', SubmitAssessmentView.as_view(), name='submit_assessment'),
+    path('reset-password/', PasswordResetView.as_view(), name='reset-password'),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

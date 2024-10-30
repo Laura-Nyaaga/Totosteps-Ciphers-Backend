@@ -1,11 +1,11 @@
 <html>
-  <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; padding: 20px; background-color: #f9f9f9;">
-    <div style="max-width: 600px; margin: auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+  <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; padding: 20px; border-radius: 20px; background-color: #880085;">
+    <div style="max-width: 600px; margin: auto; background-color: white; padding: 60px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
       <h2 style="color: #4CAF50; text-align: center;">Milestone Assessment Result</h2>
-      <p style="font-size: 16px;">Dear Parent,</p>
+      <p style="font-size: 16px;">Dear {{ parent_first_name }},</p>
       <p style="font-size: 16px;">
-          Following the assessment taken using the <strong>TotoSteps App</strong>
-          We are glad to share the detailed results for your child with you:
+          Following the assessment taken using <strong>TotoSteps App</strong>
+          We are glad to share the detailed results of your child with you:
       </p>
       <ul style="font-size: 15px; color: black; padding-left: 20px; list-style-type: square;">
         {% for result in detailed_results %}
@@ -15,7 +15,8 @@
       <p style="font-size: 16px; color: #800000; font-weight: bold;">{{ result_text }}</p>
       <br> 
       <p style="font-size: 16px; color: #555;">Continue using <strong>TotoSteps</strong> to track your child's developmental milestones.</p>
-      <p style="text-align: center; font-size: 14px; color: #999;">&copy; 2024 TotoSteps, All Rights Reserved.</p>
+      <p style="text-align: center; font-size: 14px; color: #823370;">&copy; 2024 TotoSteps, All Rights Reserved.</p>
     </div>
   </body>
 </html>
+

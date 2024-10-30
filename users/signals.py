@@ -10,15 +10,12 @@ def assign_user_permissions(sender, instance, created, **kwargs):
     if created:
         print("########################")
         
-        # Get the content type for the User model
         user_content_type = ContentType.objects.get_for_model(User)
         
         if instance.role=="Admin":
-            # Add the superuser to the admin group
             admin_group, _ = Group.objects.get_or_create(name="Admin")
             instance.groups.add(admin_group)
             
-            # Assign admin permissions
             admin_permissions = Permission.objects.filter(
                 codename__in=['view_dashboard', 'edit_questions', 'view_users', 'view_children', 'delete_children', 'restrict_users']
             )
@@ -42,7 +39,6 @@ def assign_user_permissions(sender, instance, created, **kwargs):
             print(f"Parent permissions assigned: {parent_permissions}")
         
         else:
-            # Default group for regular users
             default_group, _ = Group.objects.get_or_create(name="Default User")
             instance.groups.add(default_group)
             default_permissions = Permission.objects.filter(

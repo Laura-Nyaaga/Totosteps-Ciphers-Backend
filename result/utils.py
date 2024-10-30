@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.template.exceptions import TemplateDoesNotExist
 from assessment.models import Assessment
-
+from users.models import User
 
 
 def get_result_text(answers):
@@ -27,6 +27,7 @@ def get_detailed_result(answers):
 
 def send_results_email(answers, recipient_email):
     try:
+        user = User.objects.get(email=recipient_email)
         detailed_result = get_detailed_result(answers)
         result_text = get_result_text(answers)
     except Exception as e:
@@ -34,6 +35,7 @@ def send_results_email(answers, recipient_email):
 
     try:
         html_content = render_to_string('email.html', {
+            'parent_first_name': user.first_name,
             'detailed_results': detailed_result.split("\n"),
             'result_text': result_text
         })
@@ -45,7 +47,7 @@ def send_results_email(answers, recipient_email):
             subject="Milestone Assessment Result",
             message='',
             html_message=html_content,
-            from_email='totostepsciphers@gmail.com',            
+            from_email='TotoSteps <totostepsciphers@gmail.com>',            
             recipient_list=[recipient_email],
             fail_silently=False,
         )
