@@ -1,6 +1,4 @@
 from django.db import models
-
-# from child.models import Child
 from milestones.models import Milestone
 
 # Create your models here.
@@ -29,7 +27,6 @@ class Assessment(models.Model):
     correct_answer = models.CharField(max_length=3, choices=[('YES', 'YES'), ('NO', 'NO')])
     question_type = models.CharField(max_length=25, choices=QUESTION_TYPES)
     category = models.CharField(choices=CATEGORY_CHOICES, null=False, max_length=12)
-    # child = models.ForeignKey(Child, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

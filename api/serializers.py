@@ -1,3 +1,4 @@
+from datetime import date
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -44,6 +45,15 @@ class ChildSerializer(serializers.ModelSerializer):
         birth_date = obj.date_of_birth
         age = relativedelta(today, birth_date)
         return f"Is {age.years} years, {age.months} months old"
+    
+    def validate_date_of_birth(self, value):
+        today = date.today()
+        age = relativedelta(today, value)
+        
+        if age.years > 3 or (age.years == 3 and age.months > 0):
+            raise serializers.ValidationError("Only children below three years are allowed.")
+        
+        return value
  
 
 # MILESTONE MODEL
@@ -134,7 +144,19 @@ class ParentListSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
 
-
-
-
-
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    old_password = serializers.CharField(write_only=True, required=False)
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("New passwords do not match.")
+            
+        try:
+            user = User.objects.get(email=data['email'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email address.")
+            
+        return data
