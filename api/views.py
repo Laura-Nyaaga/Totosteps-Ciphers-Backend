@@ -4,10 +4,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User, Permission, AnonymousUser
 from django.core.files.storage import default_storage
 from django.db import transaction
+from django.contrib.auth import login
 import logging
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-
 
 import cv2
 import numpy as np
@@ -26,19 +26,18 @@ from result.models import Result
 from result.utils import send_results_email
 from .serializers import (AssessmentSerializer, ChildListSerializer,
 ChildSerializer,
-MilestoneSerializer, ParentListSerializer, 
+MilestoneSerializer, ParentListSerializer, PasswordResetSerializer, 
 ResourceSerializer, 
 ResultSerializer,
 RegisterSerializer)
 from .serializers import AutismImageSerializer, AutismResultsSerializer
 
-
-lower_ipd_threshold = 4.0  # cm
-upper_ipd_threshold = 5.0   # cm
-high_autism_ipd_threshold = upper_ipd_threshold + 1  # cm
-lower_forehead_threshold = 3.5  # cm
-upper_forehead_threshold = 4.5   # cm
-high_autism_forehead_threshold = upper_forehead_threshold + 1
+lower_ipd_threshold = 3.5  # cm
+upper_ipd_threshold = 4.0  # cm
+high_autism_ipd_threshold = upper_ipd_threshold + 0.3  # cm
+lower_forehead_threshold = 3.0  # cm
+upper_forehead_threshold = 3.5  # cm
+high_autism_forehead_threshold = upper_forehead_threshold + 0.3
 scale_factor = 30.0 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
@@ -51,15 +50,15 @@ logger = logging.getLogger(__name__)
 class AutismImageUploadView(APIView):
     def post(self, request):
         file = request.FILES.get('image')
-        # file_path = autism_image.image_upload.path 
         child_id = request.data.get('child')
         if not child_id:
-            return Response ({"error": "Child ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Child ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try: 
             child = Child.objects.get(child_id=child_id)
         except Child.DoesNotExist:
-            return Response({"error":"Child not found"},status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+
         if not file:
             return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -76,16 +75,15 @@ class AutismImageUploadView(APIView):
 
         if len(faces) == 0:
             return Response({"error": "No face detected"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(faces) > 1:
+            return Response({"error": "Many face detected, please upload an image with only one face."}, status=status.HTTP_400_BAD_REQUEST)
 
         for face_coordinates in faces:
-        
             eye_distance_cm, forehead_length_cm, left_eye, right_eye = self.calculate_measurements(face_coordinates)
 
-            
             risk_assessment = self.assess_risk(eye_distance_cm, forehead_length_cm)
 
-            
-            autism_image = Autism_Image.objects.create(image_upload=file, child=child)  
             autism_result = Autism_Results.objects.create(
                 image=autism_image,
                 result=risk_assessment
@@ -93,7 +91,6 @@ class AutismImageUploadView(APIView):
 
             result_serializer = AutismResultsSerializer(autism_result)
 
-        
             return Response(result_serializer.data, status=status.HTTP_201_CREATED)
 
     def calculate_measurements(self, face_coordinates):
@@ -113,16 +110,18 @@ class AutismImageUploadView(APIView):
         """Assess autism risk based on IPD and forehead length."""
         if (eye_distance_cm > high_autism_ipd_threshold) and (forehead_length_cm > high_autism_forehead_threshold):
             return "Highly Autistic"
-        elif (lower_ipd_threshold <= eye_distance_cm <= upper_ipd_threshold) and (lower_forehead_threshold <= forehead_length_cm <= upper_forehead_threshold):
+        elif (eye_distance_cm < lower_ipd_threshold) or (forehead_length_cm < lower_forehead_threshold):
             return "Non Autistic"
-        else:
+        elif (eye_distance_cm <= upper_ipd_threshold and forehead_length_cm <= upper_forehead_threshold):
             return "Low Autism Risk"
-        
+        else:
+            return "Moderate Autism Risk"  
+
     def get(self, request):
         images = Autism_Image.objects.all()
         serializer = AutismImageSerializer(images, many=True)
         return Response(serializer.data)
-     
+
 class AutismImageDetailListView(APIView):
     def get(self, request, image_id):
         image = get_object_or_404(Autism_Image, image_id=image_id)
@@ -135,7 +134,6 @@ class AutismImageDetailListView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 # AUTISM RESULT
-
 class AutismResultListView(APIView):
     def get(self, request):
         autism_results = Autism_Results.objects.all()
@@ -248,24 +246,6 @@ class MilestoneDetailView(APIView):
         milestone = self.get_object(milestone_id)
         milestone.delete()
         return Response({"detail": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
-class ChildMilestoneListView(APIView):
-    def get(self, request, child_id):
-        child = get_object_or_404(Child, child_id=child_id)
-        child_age_in_months = child.get_age_in_months()
-        current_milestone = Milestone.get_current_milestone(child_age_in_months)
-        milestones = Milestone.objects.filter(child_id=child).order_by('age')
-        milestone_data = []
-        for milestone in milestones:
-            is_current = (milestone == current_milestone)
-            milestone_data.append({
-                "id": milestone.milestone_id,
-                "age": milestone.age,
-                "description": milestone.name,
-                "summary": milestone.summary,
-                "is_current": is_current
-            })
-        return Response(milestone_data, status=status.HTTP_200_OK)
 
 
  # ASSESSMENT MODEL
@@ -519,4 +499,40 @@ class SubmitAssessmentView(APIView):
                 return Response({'message': 'Assessment submitted and email sent!'}, status=status.HTTP_201_CREATED)
             else:
                 return Response({'message': f'Assessment submitted, but email failed to send: {email_status}'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+   
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = User.objects.get(email=serializer.validated_data['email'])
+                user.set_password(serializer.validated_data['new_password'])
+                user.save()
+                
+                logger.info(f"Password reset successful for user: {user.email}")
+                user_data = {
+                    'user_id': user.user_id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                }
+                
+                login(request, user)
+                
+                return Response({
+                    'status': 'success',
+                    'message': 'Password reset successful. You are now logged in.',
+                    'user': user_data
+                }, status=status.HTTP_200_OK)
+                
+            except User.DoesNotExist:
+                logger.warning(f"Password reset attempted for non-existent email: {serializer.validated_data['email']}")
+                return Response({
+                    'status': 'error',
+                    'message': 'Invalid email address'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

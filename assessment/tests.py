@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from assessment.models import Assessment
 from milestones.models import Milestone
 
@@ -6,9 +7,15 @@ class AssessmentTestCase(TestCase):
 
     def setUp(self):
         self.milestone = Milestone.objects.create(
-            age=24,
-            category='Cognitive',
-            summary='Basic cognitive abilities'
+             name="Social Smile",
+            age=2,
+            description="Milestone summary",
+            summary={"description": "Smiles at people"},
+            image = SimpleUploadedFile(
+            name='test_image.jpeg',
+            content=b'\x47\x49\x46\x38\x39\x61',  
+            content_type='image/jpeg'
+        )
         )
         
         self.assessment_data = {

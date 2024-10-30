@@ -9,7 +9,7 @@ class UserManager(BaseUserManager):
             raise ValueError('The Email field must be set')
         
         if not role:
-            raise ValueError('The Role field must be set')  # Ensure role is provided
+            raise ValueError('The Role field must be set')  
         
         email = self.normalize_email(email)
         user = self.model(email=email, role=role, **extra_fields)
@@ -19,12 +19,11 @@ class UserManager(BaseUserManager):
     
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'admin')  # Default role for superuser is 'admin'
+        extra_fields.setdefault('role', 'admin') 
         
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
-    # Role choices
     ADMIN = 'admin'
     PARENT = 'parent'
     
@@ -53,7 +52,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"{self.email}"
 
     def clean(self):
-        # Ensure only superusers have the admin role
         if self.role == 'admin' and not self.is_superuser:
             raise ValidationError(_('Admin role can only be assigned to superusers.'))
 
