@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.validators import FileExtensionValidator
 
-# Create your models here.
 class Milestone(models.Model):
     AGE_IN_MONTHS=[
         (2, '2 Months'),

@@ -14,7 +14,6 @@ from PIL import Image
 class AutismResultTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        # Create a parent user
         self.parent_user = User.objects.create_user(
             email='parent@example.com',
             password='testpassword',
@@ -35,22 +34,18 @@ class AutismResultTests(TestCase):
             child=self.child,
             image_upload=SimpleUploadedFile('test_image.jpg', image_content.read(), content_type='image/jpeg')
         )
-        # Create a autism result related to the autism image
         self.autism_result = Autism_Results.objects.create(
             image=self.autism_image,
             result="Positive"
         )
         
-        # URLs for list and detail views
         self.list_url = reverse('autism-result-list')
-    # Test GET request for Autism Results
     def test_get_autism_results_list(self):
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1) 
         self.assertEqual(response.data[0]['result'], 'Positive')
         
-    # Happy Test Case: Test POST request for Autism Results
     def test_post_autism_result(self):
         data = {
             "image": self.autism_image.image_id,
@@ -60,7 +55,6 @@ class AutismResultTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['result'], "Negative")
 
-    # Unhappy Test Case: Test POST request with missing result field
     def test_post_autism_result_invalid(self):
         data = {
             "image": self.autism_image.image_id  
@@ -69,7 +63,6 @@ class AutismResultTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('result', response.data)  
 
-    # Unhappy Test Case: Test POST request with invalid image_id
     def test_post_autism_result_invalid_image(self):
         data = {
             "image": 999,  
