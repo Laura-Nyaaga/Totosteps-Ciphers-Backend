@@ -87,7 +87,6 @@ def callback(request):
         request.session["user"] = token
         logger.info("OAuth callback successful.")
         
-        # Return user information as JSON
         return JsonResponse({
             'status': 'success',
             'token': token,

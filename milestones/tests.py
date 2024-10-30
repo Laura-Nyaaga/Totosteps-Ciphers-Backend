@@ -19,7 +19,7 @@ class MilestoneTestCase(TestCase):
             summary={"description": "Smiles at people"},
             image = SimpleUploadedFile(
             name='test_image.jpeg',
-            content=b'\x47\x49\x46\x38\x39\x61',  # Minimal valid GIF header content
+            content=b'\x47\x49\x46\x38\x39\x61',  
             content_type='image/jpeg'
         )
         )
@@ -30,7 +30,7 @@ class MilestoneTestCase(TestCase):
             summary={"description": "Begins to babble"},
             image = SimpleUploadedFile(
             name='testone_image.png',
-            content=b'\x46\x48\x47\x39\x38\x60',  # Minimal valid GIF header content
+            content=b'\x46\x48\x47\x39\x38\x60',  
             content_type='image/png'
         )
         )

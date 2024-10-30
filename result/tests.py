@@ -1,6 +1,7 @@
 
 from django.test import TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APIClient
 from result.models import Result
@@ -23,11 +24,15 @@ class ResultAPITest(TestCase):
             parent=self.user
         )
         self.milestone = Milestone.objects.create(
-            name='Test Milestone',
-            child_id=self.child,
-            age=12,
-            category='Social',
-            summary={'key': 'value'}
+         name="Social Smile",
+            age=2,
+            description="Milestone summary",
+            summary={"description": "Smiles at people"},
+            image = SimpleUploadedFile(
+            name='test_image.jpeg',
+            content=b'\x47\x49\x46\x38\x39\x61',  
+            content_type='image/jpeg'
+        )
         )
         self.assessment = Assessment.objects.create(
             milestone=self.milestone,
