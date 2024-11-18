@@ -7,7 +7,7 @@ from users.models import User
 
 
 def get_result_text(answers):
-    negative_answers = [question for question, answer in answers.items() if answer == 'NO']
+    negative_answers = [question for question, answer in answers.items() if answer == 'No']
     if negative_answers:
         return ("ACT EARLY: Talk with your child's professional if you answered 'NO' for any questions.\n"
                 "It is important to act early by talking with your child's professional.\n"
