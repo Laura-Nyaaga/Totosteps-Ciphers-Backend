@@ -37,7 +37,7 @@ class ResultAPITest(TestCase):
         self.assessment = Assessment.objects.create(
             milestone=self.milestone,
             question={'question': 'Test question'},
-            correct_answer='YES',
+            correct_answer='Yes',
             question_type='multiple choice',
             category='Social'
         )
@@ -46,7 +46,7 @@ class ResultAPITest(TestCase):
         data = {
             'milestone': self.milestone.milestone_id,
             'user': self.user.user_id,
-            'answers': {'question1': 'YES', 'question2': 'NO'}
+            'answers': {'question1': 'Yes', 'question2': 'No'}
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -69,7 +69,7 @@ class ResultAPITest(TestCase):
         result = Result.objects.create(
             milestone=self.milestone,
             user=self.user,
-            answers={'question1': 'YES', 'question2': 'NO'}
+            answers={'question1': 'Yes', 'question2': 'No'}
         )
         url = reverse('get-result', args=[result.id])
         response = self.client.get(url)
@@ -79,7 +79,7 @@ class ResultAPITest(TestCase):
         result = Result.objects.create(
             milestone=self.milestone,
             user=self.user,
-            answers={'question1': 'YES', 'question2': 'NO'}
+            answers={'question1': 'Yes', 'question2': 'No'}
         )
         url = reverse('get-result', args=[result.id])
         response = self.client.delete(url)
